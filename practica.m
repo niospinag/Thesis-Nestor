@@ -1,6 +1,6 @@
 clc
 clear all 
-
+rgn('default')
 
 %--------------------------------------------------------------------------
 % SYSTEM
@@ -8,7 +8,6 @@ clear all
 %..........................................................................
 % System constrains
 %..........................................................................
-
 
 % States
 Ae = [1 0; -1 0; 0 1; 0 -1];
@@ -34,7 +33,7 @@ bd = [dmax -dmin]';
 % Adjacency Matrix
 
 M_A = [0 0; 0 1];
-
+% weights 
 g1 = 2;
 cx1 = 0;
 cx2 = 0.2;
@@ -43,7 +42,7 @@ cx21 = (1 - cx2);
 cx4 = 1;
 %..........................................................................
 %--------------------------------------------------------------------------
-% creando la ecuacion (5)
+% building equation (5)
 Ts = 0.05;
 
 A = [0 1; -1 0];
@@ -135,6 +134,7 @@ nc4 = size( C4, 1 );
 %..........................................................................
 % Construción Gxc, Guc
 %..........................................................................
+% Building equation (15)
 
 Gxc1 = zeros( nc1*(L+1), nx);
 Guc1 = zeros( nc1*(L+1), nu*L);
@@ -205,7 +205,7 @@ clear var11 var12 var21 var22 var31 var32 var41 var42
 %..........................................................................
 % Gx, Gu, Gw construction
 %..........................................................................
-
+% Building equation (8)
 Gx = zeros( nx*T, nx);
 Gu = zeros( nx*T, nu*T);
 Gg = zeros( nx*T, nx*T);
@@ -505,7 +505,7 @@ for i = 1:L
     Y3( i+1, : ) = C3*e3;
     Y4( i+1, : ) = C4*e4;
 end
-plot(E3(1:L),1:L)
+
 
 
 %--------------------------------------------------------------------------
@@ -607,7 +607,7 @@ for i = L+1:length(t)
         gamma4m = cx4*kron( eye(L), B2o )*(up2 + u2m(nx+1:end , :));
         
         
-        Fm1 = [up1'*Guc1'*W_hat*Gxc1 + gammam'*Ggc1'*W_hat*Gxc1 - y1'*W_hat*Gxc1  ...
+        Fm1 = [up1'*Guc1'*W_hat*Gxc1+gammam'*Ggc1'*W_hat*Gxc1-y1'*W_hat*Gxc1  ...
             up1'*Guc1'*W_hat*Guc1+gammam'*Ggc1'*W_hat*Guc1-y1'*W_hat*Guc1];
         
         Fm2 = [up2'*Guc2'*W_hat*Gxc2+gamma2m'*Ggc2'*W_hat*Gxc2-y2'*W_hat*Gxc2  ...
@@ -707,8 +707,7 @@ for i = L+1:length(t)
     while norm([u;u2;u3;u4] - ua) > 1e-3 && iter <= 10000
         
         ua = [u;u2;u3;u4];
-%         gamma = pi
-%         Gg = P
+%         gamma = P
         gamma = g1*kron( eye(T), B_l)*(u_leader(i+1:i+T)');
         gamma3 = cx3*kron( eye(T), B1o )*(u+dd1);
         gamma2 = cx2*kron( eye(T), B3o )*(u3+dd3) + cx21*kron( eye(T), B1o )*(u+dd1);
