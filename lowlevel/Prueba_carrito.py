@@ -18,21 +18,21 @@ from gurobipy import *
 #
 #     def make_step(self, a, z):
 
-nx = 1; # Number of agents
-nu = 1; % Number of inputs
-nv=2; %numero de vehiculos sin el agente no cooperativo
-% MPC data
-Q = 1*eye(1);
-R = 10*eye(1);
-N = 3;%horizon
-T = 0.1; %[s]
-Ds=7;%Safety distance [m]
-Dl=25; %lateral distance
-V_max=80;
-A_max=30;
-L=6;%number of lanes
-Mmax = L-1;
-mmin = -L+1;
-p_max = 1;
+nx = 1  # Number of agents
+nu = 1  # Number of inputs
+nv = 2  # Number of vehicles
+# MPC data
+Q = 1 * eye(1)
+R = 10 * eye(1)
+N = 3  # horizon
+T = 0.1  # [s]
+Ds = 7  # Safety distance [m]
+Dl = 25  # lateral distance
+V_max = 80
+A_max = 30
+L = 6  # number of lanes
+Mmax = L - 1
+mmin = -L + 1
+p_max = 1
 
-A = [[2,-1], [1, 0.2]]
+m = Model("vehiculo")
