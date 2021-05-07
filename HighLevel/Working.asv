@@ -47,6 +47,8 @@ z_12 = sdpvar(1, 1); z_13 = sdpvar(1, 1); %carril del vehiculo j
 v_14 = sdpvar(1, 1); v_15 = sdpvar(1, 1); %velocidad del otro vehculo
 z_14 = sdpvar(1, 1); z_15 = sdpvar(1, 1); %carril del vehiculo j
 
+
+
 % ------ distance between two vehicles ------
 dis12 = sdpvar(ones(1, N + 1), ones(1, N + 1)); %distancia entre vehiculo 1 y 2
 dz_12 = intvar(ones(1, N + 1), ones(1, N + 1)); %z2-z1
@@ -356,24 +358,6 @@ hist_zp5 = [];
 hist_vp6 = [];
 hist_zp6 = [];
 
-%------condiciones iniciales----------
-vel = [20; 20 ; 20]; % velociodad inicial
-Vdes = [30; 50; 80]; %velocidad deseada
-
-zel = [1; 2; 3]; %carril inicial
-Zdes = [5; 5; 5]; %carril deseado
-
-acel = [0 0 0]';
-%---distancia inicial de cada agente
-pos = [0 -10 10]';
-
-% hold on
-vhist = vel;
-zhist = zel;
-ahist = acel;
-hist_pos = pos;
-mpciter = 0;
-
 hist_r1 = [];
 hist_d1 = [];
 hist_x1 = [];
@@ -420,6 +404,26 @@ HH  = [];
 II  = [];
 JJ = [];
 KK = [];
+
+%------condiciones iniciales----------
+vel = [20; 20 ; 20]; % velociodad inicial
+Vdes = [30; 50; 80]; %velocidad deseada
+
+zel = [1; 2; 3]; %carril inicial
+Zdes = [5; 5; 5]; %carril deseado
+
+acel = [0 0 0]';
+%---distancia inicial de cada agente
+pos = [0 -10 10]';
+
+% hold on
+vhist = vel;
+zhist = zel;
+ahist = acel;
+hist_pos = pos;
+mpciter = 0;
+
+
 
 %% Optimization
 
@@ -524,7 +528,7 @@ for i = 1:50
                                 zel(2), d_23}; 
     [solutions2, diagnostics] = control_lat{inputs2};
     
-    Z = solutions2{1}; zel2(2) = Z(:, 2); hist_zp3 = [hist_zp3; Z];
+    Z = solutions2{1}; zel2(3) = Z(:, 2); hist_zp3 = [hist_zp3; Z];
     II2 = solutions2{2}; hist_ll3 = [hist_ll3; II2];
     JJ2 = solutions2{3}; hist_lr3 = [hist_lr3; JJ2]; 
     

@@ -47,6 +47,8 @@ z_12 = sdpvar(1, 1); z_13 = sdpvar(1, 1); %carril del vehiculo j
 v_14 = sdpvar(1, 1); v_15 = sdpvar(1, 1); %velocidad del otro vehculo
 z_14 = sdpvar(1, 1); z_15 = sdpvar(1, 1); %carril del vehiculo j
 
+
+
 % ------ distance between two vehicles ------
 dis12 = sdpvar(ones(1, N + 1), ones(1, N + 1)); %distancia entre vehiculo 1 y 2
 dz_12 = intvar(ones(1, N + 1), ones(1, N + 1)); %z2-z1
@@ -179,7 +181,7 @@ for k = 1:N
 
     constraints = [constraints, v{k + 1} == v{k} + T * a{k}]; %velocidad futura
 
-    % ---------------------------------------vehiculo 2-------------------------------
+    %################################ vehiculo 2 ################################
     constraints = [constraints, dis12{k + 1} == dis12{k} + T * (v_12 - v{k})];
     %................................... (12)...............................
     constraints = log_min(constraints, n12{k}, dz_12{k}, 0);
@@ -199,7 +201,7 @@ for k = 1:N
     constraints = [constraints, -2 * f12{k} + g12{k} + h12{k} <= 0];
 
     
-    % ---------------------------------------vehiculo 3-------------------------------
+    % ################################ vehiculo 3 ################################ 
     constraints = [constraints, dis13{k + 1} == dis13{k} + T * (v_13 - v{k})];
     %................................... (13)...............................
     constraints = log_min(constraints, n13{k}, dz_13{k}, 0);
@@ -219,6 +221,26 @@ for k = 1:N
     constraints = [constraints, -2 * f13{k} + g13{k} + h13{k} <= 0];
     
 
+    % ################################ vehiculo 4 ################################ 
+    constraints = [constraints, dis14{k + 1} == dis14{k} + T * (v_14 - v{k})];
+    %................................... (14)...............................
+    constraints = log_min(constraints, n14{k}, dz_14{k}, 0);
+    constraints = log_may(constraints, th14{k}, dz_14{k}, 0);
+    constraints = log_and(constraints, a14{k}, n14{k}, th14{k});
+    %................................... (14)...............................
+    constraints = log_may(constraints, b14{k}, dis14{k}, 0);
+    %................................... (18)...............................
+    constraints = log_and(constraints, ab14{k}, a14{k}, b14{k});
+    %................................... (21)...............................
+    constraints = log_imp(constraints, f14{k}, dis14{k}, ab14{k});
+    %................................... (22)...............................
+    constraints = log_imp(constraints, g14{k}, Ds, a14{k});
+    %................................... (23)...............................
+    constraints = log_imp(constraints, h14{k}, dis14{k}, a14{k});
+    %................................... (24)...............................
+    constraints = [constraints, -2 * f14{k} + g14{k} + h14{k} <= 0];
+    
+    
     % It is EXTREMELY important to add as many
     % constraints as possible to the binary variables
 
@@ -226,9 +248,10 @@ end
 
 parameters_in = {Vd, v{1}, ...
                 [dz_12{:}], v_12, dis12{1},...
-                [dz_13{:}], v_13, dis13{1}}; 
+                [dz_13{:}], v_13, dis13{1},...
+                [dz_14{:}], v_14, dis14{1}}; 
 
-solutions_out = {[a{:}], [v{:}], [dis12{:}],  [dis13{:}]}; 
+solutions_out = {[a{:}], [v{:}], [dis12{:}],  [dis13{:}],[dis14{:}]}; 
 % controller = optimizer(constraints, objective,sdpsettings('verbose',1),[x{1};r],u{1});
 control_front = optimizer(constraints, objective, sdpsettings('solver', 'gurobi'), parameters_in, solutions_out);
 
@@ -245,7 +268,7 @@ for k = 1:N
                                                 1 <= z{k} <= L];
     constraints = [constraints, ll{k} + lr{k} <= 1];
 
-    % ---------------------------------------vehiculo 2-------------------------------
+    %  ################################ vehiculo 2 ################################ 
     constraints = [constraints, 1 <= z_12 <= L]; %tome valores posibles
     constraints = [constraints, mmin <= z_12 - z{k + 1} <= Mmax];
     %................................... (15.a)...............................
@@ -278,7 +301,7 @@ for k = 1:N
     
     
     
-    % ---------------------------------------vehiculo 3-------------------------------
+    %  ################################ vehiculo 3 ################################ 
     constraints = [constraints, 1 <= z_13 <= L]; %tome valores posibles
     constraints = [constraints, mmin <= z_13 - z{k + 1} <= Mmax];
     %................................... (15.a)...............................
@@ -311,15 +334,48 @@ for k = 1:N
     
     
     
+    %  ################################ vehiculo 4 ################################ 
+    constraints = [constraints, 1 <= z_14 <= L]; %tome valores posibles
+    constraints = [constraints, mmin <= z_14 - z{k + 1} <= Mmax];
+    %................................... (15.a)...............................
+    constraints = log_min(constraints, k14{k}, z_14-z{k} , 1);
+    constraints = log_may(constraints, del14{k}, z_14-z{k} , 1);
+    constraints = log_and(constraints, r1_14{k}, k14{k} , del14{k} );
+    %................................... (15.b)...............................
+    constraints = log_min(constraints, kk14{k}, z_14-z{k} , -1);
+    constraints = log_may(constraints, dell14{k}, z_14-z{k} , -1);
+    constraints = log_and(constraints, r2_14{k}, kk14{k} , dell14{k} );
+    %................................... (17)...............................
+    constraints = log_min(constraints, u14{k}, dis14{k} , Dl);
+    constraints = log_may(constraints, v14{k}, dis14{k} , -Dl);
+    constraints = log_and(constraints, x14{k}, u14{k} , v14{k} );
+    %................................... (30)...............................
+    constraints = log_and(constraints, xl_14{k}, x14{k} , ll{k});
+    constraints = log_and(constraints, xr_14{k}, x14{k} , lr{k});
+    %................................... (31)...............................
+    constraints = log_and(constraints, xlr_14{k}, xl_14{k} , r1_14{k});
+    constraints = log_and(constraints, xrr_14{k}, xr_14{k} , r2_14{k});
+
+    %................................... (33)...............................
+    constraints = log_imp(constraints, xa_14{k}, z{k+1} , xlr_14{k});
+    constraints = log_imp(constraints, xb_14{k}, z{k} ,   xlr_14{k});
+    constraints = log_imp(constraints, xc_14{k}, z{k+1} , xrr_14{k});
+    constraints = log_imp(constraints, xd_14{k}, z{k} ,   xrr_14{k});
+    %................................... (32)...............................
+    constraints = [constraints, xa_14{k} - xb_14{k} + xc_14{k} - xd_14{k} <= 0];
+    constraints = [constraints, 0 <= xa_14{k} - xb_14{k} + xc_14{k} - xd_14{k} ];
+    
+    
     % It is EXTREMELY important to add as many
     % constraints as possible to the binary variables
 
 end
-constraints = [constraints, [dis12{1} <= 100000]];
+% constraints = [constraints, [dis12{1} <= 100000]];
   
 
     parameters_in = {Zd, z{1}, z_12, [dis12{:}],...
-                               z_13, [dis13{:}]}; 
+                               z_13, [dis13{:}],...
+                               z_14, [dis14{:}]}; 
 
     solutions_out = {[z{:}], [ll{:}], [lr{:}]};
                 
@@ -356,6 +412,56 @@ hist_zp5 = [];
 hist_vp6 = [];
 hist_zp6 = [];
 
+
+%  history of the logical variables
+hist_r1 = [];
+hist_d1 = [];
+hist_x1 = [];
+hist_rd1 = [];
+hist_ps1 = [];
+hist_p1 = [];
+hist_s1 = [];
+hist_del1 = [];
+
+hist_r2 = [];
+hist_d2 = [];
+hist_x2 = [];
+hist_rd2 = [];
+hist_ps2 = [];
+hist_p2 = [];
+hist_v2 = [];
+hist_ul2 = [];
+%  change lane variables
+hist_ll1 = [];
+hist_lr1 = [];
+hist_ll2 = [];
+hist_lr2 = [];
+hist_ll3 = [];
+hist_lr3 = [];
+hist_ll4 = [];
+hist_lr4 = [];
+hist_ll5 = [];
+hist_lr5 = [];
+hist_ll6 = [];
+hist_lr6 = [];
+
+hist_dz = [];
+hist_dis1 = [];
+hist_dis2 = [];
+
+% auxiliary variables
+AA = [];
+BB = [];
+CC = [];
+DD = [];
+EE = [];
+FF = [];
+GG  = [];
+HH  = [];
+II  = [];
+JJ = [];
+KK = [];
+
 %------condiciones iniciales----------
 vel = [20; 20 ; 20]; % velociodad inicial
 Vdes = [30; 50; 80]; %velocidad deseada
@@ -374,52 +480,7 @@ ahist = acel;
 hist_pos = pos;
 mpciter = 0;
 
-hist_r1 = [];
-hist_d1 = [];
-hist_x1 = [];
-hist_rd1 = [];
-hist_ps1 = [];
-hist_p1 = [];
-hist_s1 = [];
-hist_del1 = [];
 
-hist_r2 = [];
-hist_d2 = [];
-hist_x2 = [];
-hist_rd2 = [];
-hist_ps2 = [];
-hist_p2 = [];
-hist_v2 = [];
-hist_ul2 = [];
-
-hist_ll1 = [];
-hist_lr1 = [];
-hist_ll2 = [];
-hist_lr2 = [];
-hist_ll3 = [];
-hist_lr3 = [];
-hist_ll4 = [];
-hist_lr4 = [];
-hist_ll5 = [];
-hist_lr5 = [];
-hist_ll6 = [];
-hist_lr6 = [];
-
-hist_dz = [];
-hist_dis1 = [];
-hist_dis2 = [];
-
-AA = [];
-BB = [];
-CC = [];
-DD = [];
-EE = [];
-FF = [];
-GG  = [];
-HH  = [];
-II  = [];
-JJ = [];
-KK = [];
 
 %% Optimization
 
@@ -433,6 +494,7 @@ LR2 = [1];
 LR1 = [1];
 dif_z12 = ones(1,N+1)*[zel(2)-zel(1)];
 dif_z13 = ones(1,N+1)*[zel(3)-zel(1)];
+% dif_z13 = ones(1,N+1)*[zel(3)-zel(1)];
 dif_z23 = ones(1,N+1)*[zel(3)-zel(2)];
 for i = 1:50
 %     ######################  VEHICULO 1 #######################
