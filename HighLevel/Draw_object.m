@@ -69,7 +69,7 @@ for k = 1:size(vhist,2)
 
     plot_car(an,alt,x(1,k,1),y(1),0,'b')%Plot the car
     plot_car(an,alt,x(1,k,2),y(2),0,'r')%Plot the car
-%     plot_car(an,alt,x(1,k,3),y(3),0,'g')%Plot the car
+    plot_car(an,alt,x(1,k,3),y(3),0,'g')%Plot the car
 %     plot_car(an,alt,x(1,k,4),y(4),0,'c')%Plot the car
 %     plot_car(an,alt,x(1,k,5),y(5),0,'m')%Plot the car
 %  
@@ -92,12 +92,12 @@ hold on;
         plot(xp(k,:,2),zphist(k,:,2),'r--*')
     end
     plot(x(1,k,2)+x_circle,y(2)+y_circle,'--r')% plot robot circle
-% %------------agente 3------------
-%     plot(x(1,k,3),y(3),'-r','linewidth',line_width);hold on % plot exhibited trajectory
-%     if k < size(vhist,2) % plot prediction
-%         plot(xp(k,:,3),zphist(k,:,3),'g--*')
-%     end
-%     plot(x(1,k,3)+x_circle,y(3)+y_circle,'--g')% plot robot circle
+%------------agente 3------------
+    plot(x(1,k,3),y(3),'-r','linewidth',line_width);hold on % plot exhibited trajectory
+    if k < size(vhist,2) % plot prediction
+        plot(xp(k,:,3),zphist(k,:,3),'g--*')
+    end
+    plot(x(1,k,3)+x_circle,y(3)+y_circle,'--g')% plot robot circle
 %     
 % %------------agente 4------------
 %     plot(x(1,k,4),y(4),'-r','linewidth',line_width);hold on % plot exhibited trajectory
