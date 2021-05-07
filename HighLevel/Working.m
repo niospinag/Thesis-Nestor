@@ -441,7 +441,7 @@ for i = 1:50
 
     inputs1 = {Vdes(1), vel(1), ...
         dif_z12,vel(2), (-pos(1)+pos(2)),...
-        dif_z13,vel(3), (-pos(1)+pos(3))}; %, alogic1_1 , blogic1_1  , S1logic_1 , N1logic_1};
+        dif_z13,vel(3), (-pos(1)+pos(3))}; 
     [solutions1, diagnostics] = control_front{inputs1};
         
     A = solutions1{1}; acel(1) = A(:, 1);
