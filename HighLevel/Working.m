@@ -14,7 +14,6 @@ yalmip('clear')
 % Model data
 nx = 1; % Number of agents
 nu = 1; % Number of inputs
-nv = 2; %numero de vehiculos sin el agente no cooperativo
 % MPC data
 Q = 1 * eye(1);
 R = 10 * eye(1);
@@ -466,7 +465,7 @@ KK = [];
 vel = [20; 20 ; 20]; % velociodad inicial
 Vdes = [30; 50; 80]; %velocidad deseada
 
-zel = [1; 2; 3]; %carril inicial
+zel = [1; 2; 3; 4; 5; 6]; %carril inicial
 Zdes = [5; 5; 5]; %carril deseado
 
 acel = [0 0 0]';
@@ -488,22 +487,32 @@ mpciter = 0;
 i = 0;
 zel2 = zel; %same dimentions
 time = 20;
-tic
-sim_tim = 20;
-LR2 = [1];
-LR1 = [1];
-dif_z12 = ones(1,N+1)*[zel(2)-zel(1)];
-dif_z13 = ones(1,N+1)*[zel(3)-zel(1)];
+
+L = 40;
+nv = 4; %numero de vehiculos sin el agente no cooperativo
+vphist = nan(L, N+1, nv);
+zphist = nan(L, N+1, nv);
+dif_z1 = ones(1, N+1).*(zel-zel(1));
+dif_z2 = ones(1, N+1).*(zel-zel(2));
+dif_z3 = ones(1, N+1).*(zel-zel(3));
+dif_z4 = ones(1, N+1).*(zel-zel(4));
+% dif_z5 = ones(1, N+1).*(zel-zel(5));
+% dif_z6 = ones(1, N+1).*(zel-zel(6));
+
+
+% dif_z12 = ones(1,N+1)*[zel(2)-zel(1)];
 % dif_z13 = ones(1,N+1)*[zel(3)-zel(1)];
-dif_z23 = ones(1,N+1)*[zel(3)-zel(2)];
-for i = 1:50
+% dif_z13 = ones(1,N+1)*[zel(3)-zel(1)];
+% dif_z23 = ones(1,N+1)*[zel(3)-zel(2)];
+tic
+for i = 1:L
 %     ######################  VEHICULO 1 #######################
 
     %.........................      solver Frontal       ............................
 
     inputs1 = {Vdes(1), vel(1), ...
-        dif_z12,vel(2), (-pos(1)+pos(2)),...
-        dif_z13,vel(3), (-pos(1)+pos(3))}; %, alogic1_1 , blogic1_1  , S1logic_1 , N1logic_1};
+        dif_z1(2,:),vel(2), (-pos(1)+pos(2)),...
+        dif_z1(2,:),vel(3), (-pos(1)+pos(3))}; %, alogic1_1 , blogic1_1  , S1logic_1 , N1logic_1};
     [solutions1, diagnostics] = control_front{inputs1};
         
     A = solutions1{1}; acel(1) = A(:, 1);
@@ -533,8 +542,8 @@ for i = 1:50
     %.........................      solver Frontal       ............................
 
     inputs1 = {Vdes(2), vel(2),...
-        -dif_z12, vel(1), (-pos(2)+pos(1)),...
-        dif_z23, vel(3), (-pos(2)+pos(3))}; 
+        dif_z2(1,:), vel(1), (-pos(2)+pos(1)),...
+        dif_z2(3,:), vel(3), (-pos(2)+pos(3))}; 
     [solutions1, diagnostics] = control_front{inputs1};
         
     A = solutions1{1}; acel(2) = A(:, 1);
@@ -560,14 +569,13 @@ for i = 1:50
     if diagnostics == 1
     error('control_lat failed 2');
     end
-    
-    
+
 %     ######################  VEHICULO 3 #######################
     %.........................      solver Frontal       ............................
 
     inputs1 = {Vdes(3), vel(3),...
-        -dif_z13, vel(1), (-pos(3)+pos(1)),...
-        -dif_z23, vel(2), (-pos(3)+pos(2))}; 
+        dif_z3(1,:), vel(1), (-pos(3)+pos(1)),...
+        dif_z3(2,:), vel(2), (-pos(3)+pos(2))}; 
     [solutions1, diagnostics] = control_front{inputs1};
         
     A = solutions1{1}; acel(3) = A(:, 1);
@@ -600,8 +608,7 @@ for i = 1:50
     dif_z12 = [hist_zp2(end,:) - hist_zp1(end,:)];
     dif_z13 = [hist_zp3(end,:) - hist_zp1(end,:)];
     dif_z23 = [hist_zp3(end,:) - hist_zp2(end,:)];
-    
-%     d1i = d1i + T * (vel(2:nv) - ones((nv - 1), 1) * vel(1));
+
     pos = pos + T*vel;
     
 
