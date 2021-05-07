@@ -91,27 +91,15 @@ objective = 0;
 
 for k = 1:N
     objective = objective + (v{k + 1} - Vd)' * Q * (v{k + 1} - Vd); % calculate obj
-
     % Feasible region
-    %     constraints = [constraints,z{k}-lr{k} <= z{k+1} ,
-    %                                              z{k+1} <= z{k}+ll{k},
-    % constraints = [constraints,1 <=    z{k+1}     <= L,
-    %                                1 <=    z_2      <= L,       %tome valores posibles
     constraints = [constraints, 0 <= v{k + 1} <= V_max, %no exceda las velocidades
-    %                          z{k}-[p_max]<=    z{k+1}   <=z{k}+[p_max], %paso de un carril
                 -A_max <= a{k} <= A_max];
 
-    %     constraints = [constraints, [1 <= z{k}    <=   L   ]];
-
-    %     constraints = [constraints, z{k+1} == z{k} + ll{k} - lr{k}];
-
-    %     constraints = [constraints,  ll{k} + lr{k} <= 1];
     constraints = [constraints, v{k + 1} == v{k} + T * a{k}]; %velocidad futura
 
     % ---------------------------------------vehiculo 2-------------------------------
     % ------------------ si dz=0  -------------------->>>    dij >= Ds----------------
-    %     constraints = [constraints, -100000  <=  dis12{k+1} <= 100000];
-    %     constraints = [constraints,   mmin  <= z_2-z{k+1}  <= Mmax];
+
     constraints = [constraints, dis12{k + 1} == dis12{k} + T * (v_2 - v{k})];
 
     %................................... (12)...............................
@@ -131,46 +119,16 @@ for k = 1:N
     %................................... (24)...............................
     constraints = [constraints, -2 * f12{k} + g12{k} + h12{k} <= 0];
 
-    % %................................... (15)...............................
-    % constraints = log_min(constraints, k12{k}, z_2-z{k} , 1);
-    % constraints = log_may(constraints, del12{k}, z_2-z{k} , 1);
-    % constraints = log_and(constraints, r12{k}, k12{k} , del12{k} );
-    % %................................... (16)...............................
-    % constraints = log_and(constraints, d12{k}, ll{k} , lr2);
-    % % constraints = [constraints, -d12{k} + ll{k} <= 0];
-    % % constraints = [constraints, d12{k} - ll{k} <= 0];
-    % %................................... (17)...............................
-    % constraints = log_min(constraints, u12{k}, dis12{k} , Dl);
-    % constraints = log_may(constraints, v12{k}, dis12{k} , -Dl);
-    % constraints = log_or(constraints, x12{k}, u12{k} , v12{k} );
-    % %................................... (30)...............................
-    % constraints = log_and(constraints, rd12{k}, r12{k} , d12{k});
-    % %................................... (31)...............................
-    % constraints = log_and(constraints, ps12{k}, x12{k} , rd12{k});
-    % %................................... (32)...............................
-    % constraints = [constraints, -s12{k} + p12{k} <= 0];
-    % constraints = [constraints, s12{k} - p12{k} <= 0];
-    % %................................... (33)...............................
-    % constraints = log_imp(constraints, p12{k}, z{k} , ps12{k});
-    % %................................... (34)...............................
-    % constraints = log_imp(constraints, s12{k}, z{k+1} , ps12{k});
 
     % It is EXTREMELY important to add as many
     % constraints as possible to the binary variables
 
 end
 
-% constraints = [constraints, [dis12{1} <= 100000]];
-% solver definition 2 node
-
 parameters_in = {Vd, v{1},  [dz{:}], ...
                         v_2, dis12{1}}; %, Aa1 , Bb1 , Ss1 , Nn1}; %, Gg1
 
-solutions_out = {[a{:}], [v{:}], [dis12{:}]}; %, [z{:}], [v{:}], [r12{:}] ,[d12{:}] ...
-%                  ,[x12{:}], [rd12{:}], [ps12{:}], [p12{:}] ...
-%                  ,[v12{:}], [u12{:}] ...
-%                  ,[ll{:}], [lr{:}]};%,  [s1{:}], [n1{:}] [g1{:}],
-%                                          [a4], [dis15{:}], [b4], [g4], [z4], [n4]};
+solutions_out = {[a{:}], [v{:}], [dis12{:}]}; 
 % controller = optimizer(constraints, objective,sdpsettings('verbose',1),[x{1};r],u{1});
 control_front = optimizer(constraints, objective, sdpsettings('solver', 'gurobi'), parameters_in, solutions_out);
 
@@ -184,23 +142,12 @@ for k = 1:N
     % Feasible region
     constraints = [constraints, z{k} - lr{k} <= z{k + 1},
                                                 z{k + 1} <= z{k} + ll{k},
-    % constraints = [constraints,1 <=    z{k+1}     <= L,
-                1 <= z_2 <= L, %tome valores posibles
-
-           [1 <= z{k} <= L]];
-
-
-
-                constraints = [constraints, ll{k} + lr{k} <= 1];
-
+                                                1 <= z_2 <= L, %tome valores posibles
+                                                1 <= z{k} <= L];
+    constraints = [constraints, ll{k} + lr{k} <= 1];
 
     % ---------------------------------------vehiculo 2-------------------------------
-    % ------------------ si dz=0  -------------------->>>    dij >= Ds----------------
-    %     constraints = [constraints, -100000  <=  dis12{k+1} <= 100000];
-                constraints = [constraints, mmin <= z_2 - z{k + 1} <= Mmax];
-    %     constraints = [constraints, dis12{k+1} == dis12{k} + T*(v_2-v{k})];
-    %
-
+    constraints = [constraints, mmin <= z_2 - z{k + 1} <= Mmax];
     %................................... (15.a)...............................
     constraints = log_min(constraints, k12{k}, z_2-z{k} , 1);
     constraints = log_may(constraints, del12{k}, z_2-z{k} , 1);
@@ -209,9 +156,6 @@ for k = 1:N
     constraints = log_min(constraints, kk12{k}, z_2-z{k} , -1);
     constraints = log_may(constraints, dell12{k}, z_2-z{k} , -1);
     constraints = log_and(constraints, r2_12{k}, kk12{k} , dell12{k} );
-    %................................... (16)...............................
-%     constraints = log_and(constraints, d12{k}, ll{k} , lr2);
-
     %................................... (17)...............................
     constraints = log_min(constraints, u12{k}, dis12{k} , Dl);
     constraints = log_may(constraints, v12{k}, dis12{k} , -Dl);
@@ -240,13 +184,12 @@ for k = 1:N
                 constraints = [constraints, [dis12{1} <= 100000]];
   
 
-    parameters_in = {Zd, z{1}, z_2, [dis12{:}], lr2}; %, Aa1 , Bb1 , Ss1 , Nn1}; %, Gg1
+    parameters_in = {Zd, z{1}, z_2, [dis12{:}]}; %, Aa1 , Bb1 , Ss1 , Nn1}; %, Gg1
 
     solutions_out = {[z{:}], [ll{:}], [lr{:}], [r1_12{:}] ,[r2_12{:}] ...
                  ,[x12{:}], [xl_12{:}], [xr_12{:}], [xlr_12{:}] ...
                  ,[xrr_12{:}], [xa_12{:}] ...
-                 ,[xb_12{:}], [xc_12{:}],  [xd_12{:}]}; %, [n1{:}] [g1{:}],
-%                                          [a4], [dis15{:}], [b4], [g4], [z4], [n4]};
+                 ,[xb_12{:}], [xc_12{:}],  [xd_12{:}]};
     % controller = optimizer(constraints, objective,sdpsettings('verbose',1),[x{1};r],u{1});
     control_lat = optimizer(constraints, objective, sdpsettings('solver', 'gurobi'), parameters_in, solutions_out);
 
@@ -351,9 +294,9 @@ for i = 1:40
     hist_dis1 = [hist_dis1; dis];
      %.........................      solver lateral       ............................
 
-    inputs2 = {Zdes(1), zel(1), zel(2), dis, LR2}; %, alogic1_2 , blogic1_2  , S1logic_2 , N1logic_2}; %G1logic_1
+    inputs2 = {Zdes(1), zel(1), zel(2), dis}; 
     [solutions2, diagnostics] = control_lat{inputs2};
-    Z = solutions2{1}; zel(1) = Z(:, 2); hist_zp1 = [hist_zp1; Z];
+    Z = solutions2{1}; zel2(1) = Z(:, 2); hist_zp1 = [hist_zp1; Z];
     I = solutions2{2}; hist_ll1 = [hist_ll1; I];
     J = solutions2{3}; hist_lr1 = [hist_lr1; J]; LR1 = J(:, 1);
     AA = [AA; solutions2{4}];
@@ -393,9 +336,10 @@ for i = 1:40
     hist_dis2 = [hist_dis2; dis];
      %.........................      solver lateral       ............................
 
-    inputs2 = {Zdes(2), zel(2), zel(1), dis, LR1}; %, alogic1_2 , blogic1_2  , S1logic_2 , N1logic_2}; %G1logic_1
+    inputs2 = {Zdes(2), zel(2), zel(1), dis}; %, alogic1_2 , blogic1_2  , S1logic_2 , N1logic_2}; %G1logic_1
     [solutions2, diagnostics] = control_lat{inputs2};
-    Z = solutions2{1}; zel(2) = Z(:, 2); hist_zp2 = [hist_zp2; Z];
+    
+    Z = solutions2{1}; zel2(2) = Z(:, 2); hist_zp2 = [hist_zp2; Z];
     II2 = solutions2{2}; hist_ll2 = [hist_ll2; II2];
     JJ2 = solutions2{3}; hist_lr2 = [hist_lr2; JJ2]; LR2 = JJ2(:, 1);
     
@@ -403,16 +347,13 @@ for i = 1:40
     error('control_lat failed 2');
     end
 
-    
-    
-  
 
     %----------------------------------------------------------------------
-    %     zel= zel2;
+        zel= zel2;
     dif_z = [hist_zp2(end,:) - hist_zp1(end,:)];
     
     d1i = d1i + T * (vel(2:nv) - ones((nv - 1), 1) * vel(1));
-    %     d2i = [-d1i(1); -d1i(1)+d1i(2)];
+    
 
     vel = vel + T * acel;
     vhist = [vhist vel];
@@ -434,5 +375,5 @@ disp("it's done")
 vphist = cat(3, hist_vp1, hist_vp1);
 zphist = cat(3, hist_zp1, hist_zp2);
 
-Draw_object(vhist, zhist, vphist, zphist, dhist, T, 0)
+Draw_object(vhist, zhist, vphist, zphist, dhist, T, 0.5)
 % save('myFile5.mat','vhist','zhist','vphist','zphist','dhist','T')
