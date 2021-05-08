@@ -546,7 +546,7 @@ KK = [];
 
 %------condiciones iniciales----------
 vel =  [25; 20; 20; 20; 30; 10]; % velociodad inicial
-Vdes = [30; 50; 40; 60; 20; 35]; %velocidad deseada
+Vdes = [5; 50; 40; 60; 20; 35]; %velocidad deseada
 
 zel =  [3; 4; 2; 5; 1; 3]; %carril inicial
 Zdes = [5; 1; 5; 1; 5; 1]; %carril deseado
