@@ -18,13 +18,13 @@ nv = 2; %numero de vehiculos sin el agente no cooperativo
 % MPC data
 Q = 1 * eye(1);
 R = 10 * eye(1);
-N = 6; %horizon 5
+N = 5; %horizon 5
 T = 0.3; %[s]
 Ds = 15; %Safety distance [m]
-Dl = 25; %lateral distance
+Dl = 20; %lateral distance
 V_max = 80;
 A_max = 30;
-L = 7; %number of lanes
+L = 6; %number of lanes
 Mmax = L - 1;
 mmin = -L + 1;
 p_max = 1;
@@ -103,19 +103,19 @@ for k = 1:N
     constraints = [constraints, dis12{k + 1} == dis12{k} + T * (v_2 - v{k})];
 
     %................................... (12)...............................
-    constraints = log_min(constraints, n12{k}, dz{k+1}, 0);
-    constraints = log_may(constraints, th12{k}, dz{k+1}, 0);
+    constraints = log_min(constraints, n12{k}, dz{k}, 0);
+    constraints = log_may(constraints, th12{k}, dz{k}, 0);
     constraints = log_and(constraints, a12{k}, n12{k}, th12{k});
     %................................... (13)...............................
-    constraints = log_may(constraints, b12{k}, dis12{k+1}, 0);
+    constraints = log_may(constraints, b12{k}, dis12{k}, 0);
     %................................... (18)...............................
     constraints = log_and(constraints, ab12{k}, a12{k}, b12{k});
     %................................... (21)...............................
-    constraints = log_imp(constraints, f12{k}, dis12{k+1}, ab12{k});
+    constraints = log_imp(constraints, f12{k}, dis12{k}, ab12{k});
     %................................... (22)...............................
     constraints = log_imp(constraints, g12{k}, Ds, a12{k});
     %................................... (23)...............................
-    constraints = log_imp(constraints, h12{k}, dis12{k+1}, a12{k});
+    constraints = log_imp(constraints, h12{k}, dis12{k}, a12{k});
     %................................... (24)...............................
     constraints = [constraints, -2 * f12{k} + g12{k} + h12{k} <= 0];
 
@@ -167,7 +167,7 @@ for k = 1:N
     constraints = [constraints, z{k} - lr{k} <= z{k + 1},
                                                 z{k + 1} <= z{k} + ll{k},
                                                 1 <= z_2 <= L, %tome valores posibles
-                                                1 <= z{k} <= L];
+                                                1 <= z{k+1} <= L];
     constraints = [constraints, ll{k} + lr{k} <= 1];
 
     % ---------------------------------------vehiculo 2-------------------------------
@@ -306,7 +306,7 @@ sim_tim = 20;
 LR2 = [1];
 LR1 = [1];
 dif_z = ones(1,N+1)*[zel(2)-zel(1)];
-for i = 1:40
+for i = 1:30
 %     ######################  VEHICULO 1 #######################
 
     %.........................      solver Frontal       ............................
