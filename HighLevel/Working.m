@@ -15,9 +15,9 @@ yalmip('clear')
 nx = 1; % Number of agents
 nu = 1; % Number of inputs
 % MPC data
-Q = 10 * eye(1);
+Q = 1 * eye(1);
 R = 10 * eye(1);
-N = 3; %horizon
+N = 5; %horizon
 T = 0.3; %[s]
 Ds = 15; %Safety distance [m]
 Dl = 25; %lateral distance
@@ -214,19 +214,19 @@ for k = 1:N
     %################################ vehiculo 2 ################################
     constraints = [constraints, dis12{k + 1} == dis12{k} + T * (v_12 - v{k})];
     %................................... (12)...............................
-    constraints = log_min(constraints, n12{k}, dz_12{k}, 0);
-    constraints = log_may(constraints, th12{k}, dz_12{k}, 0);
+    constraints = log_min(constraints, n12{k}, dz_12{k+1}, 0);
+    constraints = log_may(constraints, th12{k}, dz_12{k+1}, 0);
     constraints = log_and(constraints, a12{k}, n12{k}, th12{k});
     %................................... (13)...............................
-    constraints = log_may(constraints, b12{k}, dis12{k}, 0);
+    constraints = log_may(constraints, b12{k}, dis12{k+1}, 0);
     %................................... (18)...............................
     constraints = log_and(constraints, ab12{k}, a12{k}, b12{k});
     %................................... (21)...............................
-    constraints = log_imp(constraints, f12{k}, dis12{k}, ab12{k});
+    constraints = log_imp(constraints, f12{k}, dis12{k+1}, ab12{k});
     %................................... (22)...............................
     constraints = log_imp(constraints, g12{k}, Ds, a12{k});
     %................................... (23)...............................
-    constraints = log_imp(constraints, h12{k}, dis12{k}, a12{k});
+    constraints = log_imp(constraints, h12{k}, dis12{k+1}, a12{k});
     %................................... (24)...............................
     constraints = [constraints, -2 * f12{k} + g12{k} + h12{k} <= 0];
 
@@ -234,19 +234,19 @@ for k = 1:N
     % ################################ vehiculo 3 ################################ 
     constraints = [constraints, dis13{k + 1} == dis13{k} + T * (v_13 - v{k})];
     %................................... (13)...............................
-    constraints = log_min(constraints, n13{k}, dz_13{k}, 0);
-    constraints = log_may(constraints, th13{k}, dz_13{k}, 0);
+    constraints = log_min(constraints, n13{k}, dz_13{k+1}, 0);
+    constraints = log_may(constraints, th13{k}, dz_13{k+1}, 0);
     constraints = log_and(constraints, a13{k}, n13{k}, th13{k});
     %................................... (13)...............................
-    constraints = log_may(constraints, b13{k}, dis13{k}, 0);
+    constraints = log_may(constraints, b13{k}, dis13{k+1}, 0);
     %................................... (18)...............................
     constraints = log_and(constraints, ab13{k}, a13{k}, b13{k});
     %................................... (21)...............................
-    constraints = log_imp(constraints, f13{k}, dis13{k}, ab13{k});
+    constraints = log_imp(constraints, f13{k}, dis13{k+1}, ab13{k});
     %................................... (22)...............................
     constraints = log_imp(constraints, g13{k}, Ds, a13{k});
     %................................... (23)...............................
-    constraints = log_imp(constraints, h13{k}, dis13{k}, a13{k});
+    constraints = log_imp(constraints, h13{k}, dis13{k+1}, a13{k});
     %................................... (24)...............................
     constraints = [constraints, -2 * f13{k} + g13{k} + h13{k} <= 0];
     
@@ -254,19 +254,19 @@ for k = 1:N
     % ################################ vehiculo 4 ################################ 
     constraints = [constraints, dis14{k + 1} == dis14{k} + T * (v_14 - v{k})];
     %................................... (14)...............................
-    constraints = log_min(constraints, n14{k}, dz_14{k}, 0);
-    constraints = log_may(constraints, th14{k}, dz_14{k}, 0);
+    constraints = log_min(constraints, n14{k}, dz_14{k+1}, 0);
+    constraints = log_may(constraints, th14{k}, dz_14{k+1}, 0);
     constraints = log_and(constraints, a14{k}, n14{k}, th14{k});
     %................................... (14)...............................
-    constraints = log_may(constraints, b14{k}, dis14{k}, 0);
+    constraints = log_may(constraints, b14{k}, dis14{k+1}, 0);
     %................................... (18)...............................
     constraints = log_and(constraints, ab14{k}, a14{k}, b14{k});
     %................................... (21)...............................
-    constraints = log_imp(constraints, f14{k}, dis14{k}, ab14{k});
+    constraints = log_imp(constraints, f14{k}, dis14{k+1}, ab14{k});
     %................................... (22)...............................
     constraints = log_imp(constraints, g14{k}, Ds, a14{k});
     %................................... (23)...............................
-    constraints = log_imp(constraints, h14{k}, dis14{k}, a14{k});
+    constraints = log_imp(constraints, h14{k}, dis14{k+1}, a14{k});
     %................................... (24)...............................
     constraints = [constraints, -2 * f14{k} + g14{k} + h14{k} <= 0];
     
@@ -275,19 +275,19 @@ for k = 1:N
     % ################################ vehiculo 5 ################################ 
     constraints = [constraints, dis15{k + 1} == dis15{k} + T * (v_15 - v{k})];
     %................................... (15)...............................
-    constraints = log_min(constraints, n15{k}, dz_15{k}, 0);
-    constraints = log_may(constraints, th15{k}, dz_15{k}, 0);
+    constraints = log_min(constraints, n15{k}, dz_15{k+1}, 0);
+    constraints = log_may(constraints, th15{k}, dz_15{k+1}, 0);
     constraints = log_and(constraints, a15{k}, n15{k}, th15{k});
     %................................... (15)...............................
-    constraints = log_may(constraints, b15{k}, dis15{k}, 0);
+    constraints = log_may(constraints, b15{k}, dis15{k+1}, 0);
     %................................... (18)...............................
     constraints = log_and(constraints, ab15{k}, a15{k}, b15{k});
     %................................... (21)...............................
-    constraints = log_imp(constraints, f15{k}, dis15{k}, ab15{k});
+    constraints = log_imp(constraints, f15{k}, dis15{k+1}, ab15{k});
     %................................... (22)...............................
     constraints = log_imp(constraints, g15{k}, Ds, a15{k});
     %................................... (23)...............................
-    constraints = log_imp(constraints, h15{k}, dis15{k}, a15{k});
+    constraints = log_imp(constraints, h15{k}, dis15{k+1}, a15{k});
     %................................... (24)...............................
     constraints = [constraints, -2 * f15{k} + g15{k} + h15{k} <= 0];
     
@@ -566,7 +566,7 @@ mpciter = 0;
 
 zel2 = zel; %same dimentions
 
-F = 30;
+F = 12;
 nv = 6; %numero de vehiculos sin el agente no cooperativo
 vphist = nan(F, N+1, nv);
 zphist = nan(F, N+1, nv);
