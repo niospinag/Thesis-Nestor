@@ -15,12 +15,12 @@ yalmip('clear')
 nx = 1; % Number of agents
 nu = 1; % Number of inputs
 % MPC data
-Q = 1 * eye(1);
+Q = 10 * eye(1);
 R = 10 * eye(1);
 N = 3; %horizon
 T = 0.3; %[s]
 Ds = 15; %Safety distance [m]
-Dl = 35; %lateral distance
+Dl = 25; %lateral distance
 V_max = 80;
 A_max = 30;
 L = 6; %number of lanes
@@ -39,14 +39,12 @@ a = sdpvar(ones(1, N), ones(1, N)); %aceleracion actual del vehiculo
 z = intvar(ones(1, N + 1), ones(1, N + 1)); %carril actual
 ll = binvar(ones(1, N), ones(1, N)); %paso izquierda
 lr = binvar(ones(1, N), ones(1, N)); %paso derecha
-% -------------- neighboor ---------------
+% -------------- neighbor ---------------
 
 v_12 = sdpvar(1, 1); v_13 = sdpvar(1, 1); %velocidad del otro vehculo
 z_12 = sdpvar(1, 1); z_13 = sdpvar(1, 1); %carril del vehiculo j
 v_14 = sdpvar(1, 1); v_15 = sdpvar(1, 1); %velocidad del otro vehculo
 z_14 = sdpvar(1, 1); z_15 = sdpvar(1, 1); %carril del vehiculo j
-
-
 
 % ------ distance between two vehicles ------
 dis12 = sdpvar(ones(1, N + 1), ones(1, N + 1)); %distancia entre vehiculo 1 y 2
@@ -546,14 +544,14 @@ KK = [];
 
 %------condiciones iniciales----------
 vel =  [25; 20; 20; 20; 30; 10]; % velociodad inicial
-Vdes = [5; 50; 40; 60; 20; 35]; %velocidad deseada
+Vdes = [15; 30; 40; 50; 60; 70]; %velocidad deseada
 
-zel =  [3; 4; 2; 5; 1; 3]; %carril inicial
-Zdes = [5; 1; 5; 1; 5; 1]; %carril deseado
+zel =  [5; 5; 5; 5; 5; 5]; %carril inicial
+Zdes = [5; 5; 5; 5; 5; 5]; %carril deseado
 
 acel = zeros(6,1);
 %---distancia inicial de cada agente
-pos = [0 -20 -40 -60 -50 -80]';
+pos = [0 -30 -60 -90 -120 -150]';
 
 % hold on
 vhist = vel;
@@ -568,7 +566,7 @@ mpciter = 0;
 
 zel2 = zel; %same dimentions
 
-F = 80;
+F = 30;
 nv = 6; %numero de vehiculos sin el agente no cooperativo
 vphist = nan(F, N+1, nv);
 zphist = nan(F, N+1, nv);
@@ -578,7 +576,7 @@ dif_z3 = ones(1, N+1).*(zel-zel(3));
 dif_z4 = ones(1, N+1).*(zel-zel(4));
 dif_z5 = ones(1, N+1).*(zel-zel(5));
 dif_z6 = ones(1, N+1).*(zel-zel(6));
-
+hist_NH1 = [];
 
 tic
 for i = 1:F
@@ -587,7 +585,7 @@ for i = 1:F
 %NH = [2 3 4 5];
 zel= zel2;
 NH = closest(pos, zel, 1);
-
+hist_NH1 = [hist_NH1; NH] ;
     %.........................      solver Frontal       ............................
 
     inputs1 = {Vdes(1), vel(1), ...
@@ -678,7 +676,7 @@ NH = closest(pos, zel, 3);
         dif_z3(NH(4),:), vel(NH(4)), (-pos(3)+pos(NH(4)))}; 
     [solutions1, diagnostics] = control_front{inputs1};
         
-    A = solutions1{1}; acel(3) = A(:, 1);
+    A = solutions1{1}; acel(3) = A(:, 1); 
     V = solutions1{2}; vphist(i,:,3) = V;
     d_31 = solutions1{3}; d_31(1) = -pos(3)+pos(NH(1));
     d_32 = solutions1{4}; d_32(1) = -pos(3)+pos(NH(2));
@@ -857,7 +855,7 @@ toc
 disp("it's done")
 
 %% plot
-dhist = [-hist_pos(1,:)+hist_pos(2,:); -hist_pos(1,:)+hist_pos(3,:); -hist_pos(1,:)+hist_pos(4,:)];
+dhist = [-hist_pos(1,:)+hist_pos(2,:); -hist_pos(1,:)+hist_pos(3,:); -hist_pos(1,:)+hist_pos(4,:); -hist_pos(1,:)+hist_pos(5,:); -hist_pos(1,:)+hist_pos(6,:)];
 
 
 Draw_object(vhist, zhist, vphist, zphist, dhist, T, 0)

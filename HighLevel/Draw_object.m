@@ -117,9 +117,9 @@ hold on;
 %------------agente 6------------
     plot(x(1,k,6),y(6),'-r','linewidth',line_width);hold on % plot exhibited trajectory
     if k < size(vhist,2) % plot prediction
-        plot(xp(k,:,6),zphist(k,:,6),'m--*')
+        plot(xp(k,:,6),zphist(k,:,6),'Y--*')
     end
-    plot(x(1,k,6)+x_circle,y(6)+y_circle,'--m')% plot robot circle
+    plot(x(1,k,6)+x_circle,y(6)+y_circle,'--y')% plot robot circle
     
     
  filename = 'MPC4.gif';% <---------------------------------------------------------------------------------------------------------------
