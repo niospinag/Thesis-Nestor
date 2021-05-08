@@ -18,7 +18,7 @@ nv = 2; %numero de vehiculos sin el agente no cooperativo
 % MPC data
 Q = 1 * eye(1);
 R = 10 * eye(1);
-N = 5; %horizon
+N = 6; %horizon 5
 T = 0.3; %[s]
 Ds = 15; %Safety distance [m]
 Dl = 25; %lateral distance
@@ -103,19 +103,19 @@ for k = 1:N
     constraints = [constraints, dis12{k + 1} == dis12{k} + T * (v_2 - v{k})];
 
     %................................... (12)...............................
-    constraints = log_min(constraints, n12{k}, dz{k}, 0);
-    constraints = log_may(constraints, th12{k}, dz{k}, 0);
+    constraints = log_min(constraints, n12{k}, dz{k+1}, 0);
+    constraints = log_may(constraints, th12{k}, dz{k+1}, 0);
     constraints = log_and(constraints, a12{k}, n12{k}, th12{k});
     %................................... (13)...............................
-    constraints = log_may(constraints, b12{k}, dis12{k}, 0);
+    constraints = log_may(constraints, b12{k}, dis12{k+1}, 0);
     %................................... (18)...............................
     constraints = log_and(constraints, ab12{k}, a12{k}, b12{k});
     %................................... (21)...............................
-    constraints = log_imp(constraints, f12{k}, dis12{k}, ab12{k});
+    constraints = log_imp(constraints, f12{k}, dis12{k+1}, ab12{k});
     %................................... (22)...............................
     constraints = log_imp(constraints, g12{k}, Ds, a12{k});
     %................................... (23)...............................
-    constraints = log_imp(constraints, h12{k}, dis12{k}, a12{k});
+    constraints = log_imp(constraints, h12{k}, dis12{k+1}, a12{k});
     %................................... (24)...............................
     constraints = [constraints, -2 * f12{k} + g12{k} + h12{k} <= 0];
 
@@ -125,10 +125,34 @@ for k = 1:N
 
 end
 
+
+%     %................................... (12)...............................
+%     constraints = log_min(constraints, n12{N+1}, dz{N+1}, 0);
+%     constraints = log_may(constraints, th12{N+1}, dz{N+1}, 0);
+%     constraints = log_and(constraints, a12{N+1}, n12{N+1}, th12{N+1});
+%     %................................... (13)...............................
+%     constraints = log_may(constraints, b12{N+1}, dis12{N+1}, 0);
+%     %................................... (18)...............................
+%     constraints = log_and(constraints, ab12{k}, a12{N+1}, b12{N+1});
+%     %................................... (21)...............................
+%     constraints = log_imp(constraints, f12{k}, dis12{k}, ab12{k});
+%     %................................... (22)...............................
+%     constraints = log_imp(constraints, g12{k}, Ds, a12{k});
+%     %................................... (23)...............................
+%     constraints = log_imp(constraints, h12{k}, dis12{k}, a12{k});
+%     %................................... (24)...............................
+%     constraints = [constraints, -2 * f12{k} + g12{k} + h12{k} <= 0];
+
+
+
+
+
+
 parameters_in = {Vd, v{1},  [dz{:}], ...
                         v_2, dis12{1}}; %, Aa1 , Bb1 , Ss1 , Nn1}; %, Gg1
 
-solutions_out = {[a{:}], [v{:}], [dis12{:}]}; 
+solutions_out = {[a{:}], [v{:}], [dis12{:}] ,[a12{:}], [b12{:}], [ab12{:}], [f12{:}] ...
+                 ,[g12{:}], [h12{:}] }; 
 % controller = optimizer(constraints, objective,sdpsettings('verbose',1),[x{1};r],u{1});
 control_front = optimizer(constraints, objective, sdpsettings('solver', 'gurobi'), parameters_in, solutions_out);
 
@@ -184,7 +208,7 @@ for k = 1:N
                 constraints = [constraints, [dis12{1} <= 100000]];
   
 
-    parameters_in = {Zd, z{1}, z_2, [dis12{:}], lr2}; %, Aa1 , Bb1 , Ss1 , Nn1}; %, Gg1
+    parameters_in = {Zd, z{1}, z_2, [dis12{:}]}; %, Aa1 , Bb1 , Ss1 , Nn1}; %, Gg1
 
     solutions_out = {[z{:}], [ll{:}], [lr{:}], [r1_12{:}] ,[r2_12{:}] ...
                  ,[x12{:}], [xl_12{:}], [xr_12{:}], [xlr_12{:}] ...
@@ -216,7 +240,7 @@ Zdes = [5; 5]; %carril deseado
 
 acel = [0 0]';
 %---distancia inicial de cada agente
-d1i = [-10]';
+d1i = [-30]';
 
 % hold on
 vhist = vel;
@@ -264,6 +288,13 @@ II  = [];
 JJ = [];
 KK = [];
 
+hist_a12 = [];
+hist_b12 = [];
+hist_ab12 = [];
+hist_f12 = [];
+hist_g12 = [];
+hist_h12 = [];
+
 %% Optimization
 
 
@@ -286,17 +317,19 @@ for i = 1:40
         
     A = solutions1{1}; acel(1) = A(:, 1);
     V = solutions1{2}; hist_vp1 = [hist_vp1; V];
-    dis = solutions1{3};
-    dis(1) = d1i(1);
+    dis = solutions1{3}; dis(1) = d1i(1);
+
+
+    
     if diagnostics == 1
     error('control_front failed 1');
     end
     hist_dis1 = [hist_dis1; dis];
      %.........................      solver lateral       ............................
 
-    inputs2 = {Zdes(1), zel(1), zel(2), dis, LR2}; %, alogic1_2 , blogic1_2  , S1logic_2 , N1logic_2}; %G1logic_1
+    inputs2 = {Zdes(1), zel(1), zel(2), dis}; 
     [solutions2, diagnostics] = control_lat{inputs2};
-    Z = solutions2{1}; zel(1) = Z(:, 2); hist_zp1 = [hist_zp1; Z];
+    Z = solutions2{1}; zel2(1) = Z(:, 2); hist_zp1 = [hist_zp1; Z];
     I = solutions2{2}; hist_ll1 = [hist_ll1; I];
     J = solutions2{3}; hist_lr1 = [hist_lr1; J]; LR1 = J(:, 1);
     AA = [AA; solutions2{4}];
@@ -327,8 +360,14 @@ for i = 1:40
         
     A = solutions1{1}; acel(2) = A(:, 1);
     V = solutions1{2}; hist_vp2 = [hist_vp2; V];
-    dis = solutions1{3};
-    dis(1) = -d1i(1);
+    dis = solutions1{3};  dis(1) = -d1i(1);
+    hist_a12 = [hist_a12; solutions1{4}];
+    hist_b12 = [hist_b12; solutions1{5}];
+    hist_ab12 = [hist_ab12; solutions1{6}];
+    hist_f12 = [hist_f12; solutions1{7}];
+    hist_g12 = [hist_g12; solutions1{8}];
+    hist_h12 = [hist_h12; solutions1{9}];
+    
     if diagnostics == 1
     error('control_front failed 2');
     end
@@ -336,9 +375,10 @@ for i = 1:40
     hist_dis2 = [hist_dis2; dis];
      %.........................      solver lateral       ............................
 
-    inputs2 = {Zdes(2), zel(2), zel(1), dis, LR1}; %, alogic1_2 , blogic1_2  , S1logic_2 , N1logic_2}; %G1logic_1
+    inputs2 = {Zdes(2), zel(2), zel(1), dis}; %, alogic1_2 , blogic1_2  , S1logic_2 , N1logic_2}; %G1logic_1
     [solutions2, diagnostics] = control_lat{inputs2};
-    Z = solutions2{1}; zel(2) = Z(:, 2); hist_zp2 = [hist_zp2; Z];
+    
+    Z = solutions2{1}; zel2(2) = Z(:, 2); hist_zp2 = [hist_zp2; Z];
     II2 = solutions2{2}; hist_ll2 = [hist_ll2; II2];
     JJ2 = solutions2{3}; hist_lr2 = [hist_lr2; JJ2]; LR2 = JJ2(:, 1);
     
@@ -348,11 +388,11 @@ for i = 1:40
 
 
     %----------------------------------------------------------------------
-    %     zel= zel2;
+        zel= zel2;
     dif_z = [hist_zp2(end,:) - hist_zp1(end,:)];
     
     d1i = d1i + T * (vel(2:nv) - ones((nv - 1), 1) * vel(1));
-    %     d2i = [-d1i(1); -d1i(1)+d1i(2)];
+    
 
     vel = vel + T * acel;
     vhist = [vhist vel];

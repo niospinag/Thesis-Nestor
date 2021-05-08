@@ -18,13 +18,13 @@ nv = 2; %numero de vehiculos sin el agente no cooperativo
 % MPC data
 Q = 1 * eye(1);
 R = 10 * eye(1);
-N = 5; %horizon
+N = 6; %horizon 5
 T = 0.3; %[s]
 Ds = 15; %Safety distance [m]
 Dl = 25; %lateral distance
 V_max = 80;
 A_max = 30;
-L = 6; %number of lanes
+L = 7; %number of lanes
 Mmax = L - 1;
 mmin = -L + 1;
 p_max = 1;
@@ -103,19 +103,19 @@ for k = 1:N
     constraints = [constraints, dis12{k + 1} == dis12{k} + T * (v_2 - v{k})];
 
     %................................... (12)...............................
-    constraints = log_min(constraints, n12{k}, dz{k}, 0);
-    constraints = log_may(constraints, th12{k}, dz{k}, 0);
+    constraints = log_min(constraints, n12{k}, dz{k+1}, 0);
+    constraints = log_may(constraints, th12{k}, dz{k+1}, 0);
     constraints = log_and(constraints, a12{k}, n12{k}, th12{k});
     %................................... (13)...............................
-    constraints = log_may(constraints, b12{k}, dis12{k}, 0);
+    constraints = log_may(constraints, b12{k}, dis12{k+1}, 0);
     %................................... (18)...............................
     constraints = log_and(constraints, ab12{k}, a12{k}, b12{k});
     %................................... (21)...............................
-    constraints = log_imp(constraints, f12{k}, dis12{k}, ab12{k});
+    constraints = log_imp(constraints, f12{k}, dis12{k+1}, ab12{k});
     %................................... (22)...............................
     constraints = log_imp(constraints, g12{k}, Ds, a12{k});
     %................................... (23)...............................
-    constraints = log_imp(constraints, h12{k}, dis12{k}, a12{k});
+    constraints = log_imp(constraints, h12{k}, dis12{k+1}, a12{k});
     %................................... (24)...............................
     constraints = [constraints, -2 * f12{k} + g12{k} + h12{k} <= 0];
 
@@ -125,10 +125,34 @@ for k = 1:N
 
 end
 
+
+%     %................................... (12)...............................
+%     constraints = log_min(constraints, n12{N+1}, dz{N+1}, 0);
+%     constraints = log_may(constraints, th12{N+1}, dz{N+1}, 0);
+%     constraints = log_and(constraints, a12{N+1}, n12{N+1}, th12{N+1});
+%     %................................... (13)...............................
+%     constraints = log_may(constraints, b12{N+1}, dis12{N+1}, 0);
+%     %................................... (18)...............................
+%     constraints = log_and(constraints, ab12{k}, a12{N+1}, b12{N+1});
+%     %................................... (21)...............................
+%     constraints = log_imp(constraints, f12{k}, dis12{k}, ab12{k});
+%     %................................... (22)...............................
+%     constraints = log_imp(constraints, g12{k}, Ds, a12{k});
+%     %................................... (23)...............................
+%     constraints = log_imp(constraints, h12{k}, dis12{k}, a12{k});
+%     %................................... (24)...............................
+%     constraints = [constraints, -2 * f12{k} + g12{k} + h12{k} <= 0];
+
+
+
+
+
+
 parameters_in = {Vd, v{1},  [dz{:}], ...
                         v_2, dis12{1}}; %, Aa1 , Bb1 , Ss1 , Nn1}; %, Gg1
 
-solutions_out = {[a{:}], [v{:}], [dis12{:}]}; 
+solutions_out = {[a{:}], [v{:}], [dis12{:}] ,[a12{:}], [b12{:}], [ab12{:}], [f12{:}] ...
+                 ,[g12{:}], [h12{:}] }; 
 % controller = optimizer(constraints, objective,sdpsettings('verbose',1),[x{1};r],u{1});
 control_front = optimizer(constraints, objective, sdpsettings('solver', 'gurobi'), parameters_in, solutions_out);
 
@@ -264,6 +288,13 @@ II  = [];
 JJ = [];
 KK = [];
 
+hist_a12 = [];
+hist_b12 = [];
+hist_ab12 = [];
+hist_f12 = [];
+hist_g12 = [];
+hist_h12 = [];
+
 %% Optimization
 
 
@@ -286,8 +317,10 @@ for i = 1:40
         
     A = solutions1{1}; acel(1) = A(:, 1);
     V = solutions1{2}; hist_vp1 = [hist_vp1; V];
-    dis = solutions1{3};
-    dis(1) = d1i(1);
+    dis = solutions1{3}; dis(1) = d1i(1);
+
+
+    
     if diagnostics == 1
     error('control_front failed 1');
     end
@@ -327,8 +360,14 @@ for i = 1:40
         
     A = solutions1{1}; acel(2) = A(:, 1);
     V = solutions1{2}; hist_vp2 = [hist_vp2; V];
-    dis = solutions1{3};
-    dis(1) = -d1i(1);
+    dis = solutions1{3};  dis(1) = -d1i(1);
+    hist_a12 = [hist_a12; solutions1{4}];
+    hist_b12 = [hist_b12; solutions1{5}];
+    hist_ab12 = [hist_ab12; solutions1{6}];
+    hist_f12 = [hist_f12; solutions1{7}];
+    hist_g12 = [hist_g12; solutions1{8}];
+    hist_h12 = [hist_h12; solutions1{9}];
+    
     if diagnostics == 1
     error('control_front failed 2');
     end
