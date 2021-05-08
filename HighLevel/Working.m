@@ -17,7 +17,7 @@ nu = 1; % Number of inputs
 % MPC data
 Q = 1 * eye(1);
 R = 10 * eye(1);
-N = 5; %horizon
+N = 9; %horizon
 T = 0.3; %[s]
 Ds = 15; %Safety distance [m]
 Dl = 25; %lateral distance
@@ -566,7 +566,7 @@ mpciter = 0;
 
 zel2 = zel; %same dimentions
 
-F = 12;
+F = 13;
 nv = 6; %numero de vehiculos sin el agente no cooperativo
 vphist = nan(F, N+1, nv);
 zphist = nan(F, N+1, nv);
@@ -836,10 +836,11 @@ NH = closest(pos, zel, 6);
     dif_z5 = reshape(zphist(i,:,:)-zphist(i,:,5) , [N+1, nv])';
     dif_z6 = reshape(zphist(i,:,:)-zphist(i,:,6) , [N+1, nv])';
     
+    vel = vel + T * acel;
     pos = pos + T*vel;
     
 
-    vel = vel + T * acel;
+    
     vhist = [vhist vel];
     zhist = [zhist zel];
     ahist = [ahist acel];
