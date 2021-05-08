@@ -216,7 +216,7 @@ Zdes = [5; 5]; %carril deseado
 
 acel = [0 0]';
 %---distancia inicial de cada agente
-d1i = [-10]';
+d1i = [-30]';
 
 % hold on
 vhist = vel;
@@ -375,5 +375,5 @@ disp("it's done")
 vphist = cat(3, hist_vp1, hist_vp1);
 zphist = cat(3, hist_zp1, hist_zp2);
 
-Draw_object(vhist, zhist, vphist, zphist, dhist, T, 0.5)
+Draw_object(vhist, zhist, vphist, zphist, dhist, T, 0)
 % save('myFile5.mat','vhist','zhist','vphist','zphist','dhist','T')
