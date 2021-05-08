@@ -31,7 +31,7 @@ set(gcf, 'Color', 'w');
 set(gcf,'Units','normalized','OuterPosition',[0 0 1 0.5]);%tamaño del grafico en pantalla
 
 
-xp=zeros(1,size(vphist,3)+1,V);
+xp=zeros(1,size(vphist,2),V);
 
 
 for n=2:V
@@ -70,8 +70,9 @@ for k = 1:size(vhist,2)
     plot_car(an,alt,x(1,k,1),y(1),0,'b')%Plot the car
     plot_car(an,alt,x(1,k,2),y(2),0,'r')%Plot the car
     plot_car(an,alt,x(1,k,3),y(3),0,'g')%Plot the car
-%     plot_car(an,alt,x(1,k,4),y(4),0,'c')%Plot the car
-%     plot_car(an,alt,x(1,k,5),y(5),0,'m')%Plot the car
+    plot_car(an,alt,x(1,k,4),y(4),0,'c')%Plot the car
+    plot_car(an,alt,x(1,k,5),y(5),0,'m')%Plot the car
+    plot_car(an,alt,x(1,k,6),y(6),0,'y')%Plot the car
 %  
 
 hold on;
@@ -98,23 +99,30 @@ hold on;
         plot(xp(k,:,3),zphist(k,:,3),'g--*')
     end
     plot(x(1,k,3)+x_circle,y(3)+y_circle,'--g')% plot robot circle
-%     
-% %------------agente 4------------
-%     plot(x(1,k,4),y(4),'-r','linewidth',line_width);hold on % plot exhibited trajectory
-%     if k < size(vhist,2) % plot prediction
-%         plot(xp(k,:,4),zphist(k,:,4),'c--*')
-%     end
-%     plot(x(1,k,4)+x_circle,y(4)+y_circle,'--c')% plot robot circle
-%     
-% %------------agente 5------------
-%     plot(x(1,k,5),y(5),'-r','linewidth',line_width);hold on % plot exhibited trajectory
-%     if k < size(vhist,2) % plot prediction
-%         plot(xp(k,:,5),zphist(k,:,5),'m--*')
-%     end
-%     plot(x(1,k,5)+x_circle,y(5)+y_circle,'--m')% plot robot circle
-%     
     
- filename = 'MPC1.gif';% <---------------------------------------------------------------------------------------------------------------
+%------------agente 4------------
+    plot(x(1,k,4),y(4),'-r','linewidth',line_width);hold on % plot exhibited trajectory
+    if k < size(vhist,2) % plot prediction
+        plot(xp(k,:,4),zphist(k,:,4),'c--*')
+    end
+    plot(x(1,k,4)+x_circle,y(4)+y_circle,'--c')% plot robot circle
+    
+%------------agente 5------------
+    plot(x(1,k,5),y(5),'-r','linewidth',line_width);hold on % plot exhibited trajectory
+    if k < size(vhist,2) % plot prediction
+        plot(xp(k,:,5),zphist(k,:,5),'m--*')
+    end
+    plot(x(1,k,5)+x_circle,y(5)+y_circle,'--m')% plot robot circle
+   
+%------------agente 6------------
+    plot(x(1,k,6),y(6),'-r','linewidth',line_width);hold on % plot exhibited trajectory
+    if k < size(vhist,2) % plot prediction
+        plot(xp(k,:,6),zphist(k,:,6),'m--*')
+    end
+    plot(x(1,k,6)+x_circle,y(6)+y_circle,'--m')% plot robot circle
+    
+    
+ filename = 'MPC2.gif';% <---------------------------------------------------------------------------------------------------------------
     
     
    hold off

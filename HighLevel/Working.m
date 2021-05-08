@@ -26,12 +26,12 @@ A_max = 30;
 L = 6; %number of lanes
 Mmax = L - 1;
 mmin = -L + 1;
-p_max = 1;
+% p_max = 1;
 
 %------------desired states-----------
 Zd = sdpvar(1, 1); %carril deseado
 Vd = sdpvar(1, 1); %velocidad deseada
-DS = sdpvar(1, 1); %velocidad deseada
+% DS = sdpvar(1, 1); %velocidad deseada
 
 % -------------local vehicle---------------
 v = sdpvar(ones(1, N + 1), ones(1, N + 1)); %velocidad del vehiculo actual
@@ -57,9 +57,6 @@ dz_13 = intvar(ones(1, N + 1), ones(1, N + 1)); %z2-z1
 
 dis14 = sdpvar(ones(1, N + 1), ones(1, N + 1)); %distancia entre vehiculo 1 y 2
 dz_14 = intvar(ones(1, N + 1), ones(1, N + 1)); %z2-z1
-
-dis15 = sdpvar(ones(1, N + 1), ones(1, N + 1)); %distancia entre vehiculo 1 y 2
-dz_15 = intvar(ones(1, N + 1), ones(1, N + 1)); %z2-z1
 
 
 
@@ -376,12 +373,8 @@ end
                                z_13, [dis13{:}],...
                                z_14, [dis14{:}]}; 
 
-    solutions_out = {[z{:}], [ll{:}], [lr{:}]};
+    solutions_out = {[z{:}], [ll{:}]}; %, [lr{:}]};
                 
-%     [r1_12{:}] ,[r2_12{:}] ...
-%                  ,[x12{:}], [xl_12{:}], [xr_12{:}], [xlr_12{:}] ...
-%                  ,[xrr_12{:}], [xa_12{:}] ...
-%                  ,[xb_12{:}], [xc_12{:}],  [xd_12{:}]};
     % controller = optimizer(constraints, objective,sdpsettings('verbose',1),[x{1};r],u{1});
     control_lat = optimizer(constraints, objective, sdpsettings('solver', 'gurobi'), parameters_in, solutions_out);
 
@@ -462,15 +455,15 @@ JJ = [];
 KK = [];
 
 %------condiciones iniciales----------
-vel = [20; 20 ; 20]; % velociodad inicial
-Vdes = [30; 50; 80]; %velocidad deseada
+vel =  [25; 20; 20; 20; 30; 10]; % velociodad inicial
+Vdes = [30; 50; 40; 60; 20; 35]; %velocidad deseada
 
-zel = [1; 2; 3; 4; 5; 6]; %carril inicial
-Zdes = [5; 5; 5]; %carril deseado
+zel =  [3; 4; 2; 6; 1; 3]; %carril inicial
+Zdes = [5; 5; 5; 5; 5; 5]; %carril deseado
 
-acel = [0 0 0]';
+acel = zeros(6,1);
 %---distancia inicial de cada agente
-pos = [0 -10 10]';
+pos = [0 -10 -20 -40 -45 -60]';
 
 % hold on
 vhist = vel;
@@ -483,55 +476,52 @@ mpciter = 0;
 
 %% Optimization
 
-
-i = 0;
 zel2 = zel; %same dimentions
-time = 20;
 
-L = 40;
-nv = 4; %numero de vehiculos sin el agente no cooperativo
-vphist = nan(L, N+1, nv);
-zphist = nan(L, N+1, nv);
+F = 80;
+nv = 6; %numero de vehiculos sin el agente no cooperativo
+vphist = nan(F, N+1, nv);
+zphist = nan(F, N+1, nv);
 dif_z1 = ones(1, N+1).*(zel-zel(1));
 dif_z2 = ones(1, N+1).*(zel-zel(2));
 dif_z3 = ones(1, N+1).*(zel-zel(3));
 dif_z4 = ones(1, N+1).*(zel-zel(4));
-% dif_z5 = ones(1, N+1).*(zel-zel(5));
-% dif_z6 = ones(1, N+1).*(zel-zel(6));
+dif_z5 = ones(1, N+1).*(zel-zel(5));
+dif_z6 = ones(1, N+1).*(zel-zel(6));
 
 
-% dif_z12 = ones(1,N+1)*[zel(2)-zel(1)];
-% dif_z13 = ones(1,N+1)*[zel(3)-zel(1)];
-% dif_z13 = ones(1,N+1)*[zel(3)-zel(1)];
-% dif_z23 = ones(1,N+1)*[zel(3)-zel(2)];
 tic
-for i = 1:L
+for i = 1:F
 %     ######################  VEHICULO 1 #######################
-
+% neightbors
+NH = [2 3 5];
     %.........................      solver Frontal       ............................
 
     inputs1 = {Vdes(1), vel(1), ...
-        dif_z1(2,:),vel(2), (-pos(1)+pos(2)),...
-        dif_z1(2,:),vel(3), (-pos(1)+pos(3))}; %, alogic1_1 , blogic1_1  , S1logic_1 , N1logic_1};
+        dif_z1(NH(1),:),vel(NH(1)), (-pos(1)+pos(NH(1))),...
+        dif_z1(NH(2),:),vel(NH(2)), (-pos(1)+pos(NH(2))),...
+        dif_z1(NH(3),:),vel(NH(3)), (-pos(1)+pos(NH(3)))};
     [solutions1, diagnostics] = control_front{inputs1};
         
     A = solutions1{1}; acel(1) = A(:, 1);
-    V = solutions1{2}; hist_vp1 = [hist_vp1; V];
-    d_12 = solutions1{3}; d_12(1) = -pos(1)+pos(2);
-    d_13 = solutions1{4}; d_13(1) = -pos(1)+pos(3);
+    V = solutions1{2}; vphist(i,:,1) = V;
+    d_12 = solutions1{3}; d_12(1) = -pos(1)+pos(NH(1));
+    d_13 = solutions1{4}; d_13(1) = -pos(1)+pos(NH(2));
+    d_14 = solutions1{5}; d_14(1) = -pos(1)+pos(NH(3));
     
     if diagnostics == 1
     error('control_front failed 1');
     end
-    hist_dis1 = [hist_dis1; d_12];
+%     hist_dis1 = [hist_dis1; d_12];
      %.........................      solver lateral       ............................
 
-    inputs2 = {Zdes(1), zel(1), zel(2), d_12,...
-                                zel(3), d_13}; 
+    inputs2 = {Zdes(1), zel(1), zel(NH(1)), d_12,...
+                                zel(NH(2)), d_13,...
+                                zel(NH(3)), d_14}; 
     [solutions2, diagnostics] = control_lat{inputs2};
-    Z = solutions2{1}; zel2(1) = Z(:, 2); hist_zp1 = [hist_zp1; Z];
-    I = solutions2{2}; hist_ll1 = [hist_ll1; I];
-    J = solutions2{3}; hist_lr1 = [hist_lr1; J];     
+    Z = solutions2{1}; zel2(1) = Z(:, 2); zphist(i,:,1) = Z;
+%     I = solutions2{2}; hist_ll1 = [hist_ll1; I];
+%     J = solutions2{3}; hist_lr1 = [hist_lr1; J];     
     
     if diagnostics == 1
     error('control_lat failed 1');
@@ -539,17 +529,20 @@ for i = 1:L
 
     
 %     ######################  VEHICULO 2 #######################
+NH = [3 4 5];
     %.........................      solver Frontal       ............................
 
     inputs1 = {Vdes(2), vel(2),...
-        dif_z2(1,:), vel(1), (-pos(2)+pos(1)),...
-        dif_z2(3,:), vel(3), (-pos(2)+pos(3))}; 
+        dif_z2(NH(1),:), vel(NH(1)), (-pos(2)+pos(NH(1))),...
+        dif_z2(NH(2),:), vel(NH(2)), (-pos(2)+pos(NH(2))),...
+        dif_z2(NH(3),:), vel(NH(3)), (-pos(2)+pos(NH(3)))}; 
     [solutions1, diagnostics] = control_front{inputs1};
         
     A = solutions1{1}; acel(2) = A(:, 1);
-    V = solutions1{2}; hist_vp2 = [hist_vp2; V];
-    d_12 = solutions1{3}; d_12(1) = -pos(2)+pos(1);
-    d_23 = solutions1{4}; d_23(1) = -pos(2)+pos(3);
+    V = solutions1{2}; vphist(i,:,2) = V;
+    d_12 = solutions1{3}; d_12(1) = -pos(2)+pos(NH(1));
+    d_23 = solutions1{4}; d_23(1) = -pos(2)+pos(NH(2));
+    d_24 = solutions1{5}; d_24(1) = -pos(2)+pos(NH(3));
     
     if diagnostics == 1
     error('control_front failed 2');
@@ -558,57 +551,171 @@ for i = 1:L
   
      %.........................      solver lateral       ............................
 
-    inputs2 = {Zdes(2), zel(2), zel(1), d_12,...
-                                zel(3), d_23}; 
+    inputs2 = {Zdes(2), zel(2), zel(NH(1)), d_12,...
+                                zel(NH(2)), d_23,...
+                                zel(NH(3)), d_24}; 
     [solutions2, diagnostics] = control_lat{inputs2};
     
-    Z = solutions2{1}; zel2(2) = Z(:, 2); hist_zp2 = [hist_zp2; Z];
-    II2 = solutions2{2}; hist_ll2 = [hist_ll2; II2];
-    JJ2 = solutions2{3}; hist_lr2 = [hist_lr2; JJ2];
+    Z = solutions2{1}; zel2(2) = Z(:, 2); zphist(i,:,2) = Z;
+%     II2 = solutions2{2}; hist_ll2 = [hist_ll2; II2];
+%     JJ2 = solutions2{3}; hist_lr2 = [hist_lr2; JJ2];
     
     if diagnostics == 1
     error('control_lat failed 2');
     end
 
 %     ######################  VEHICULO 3 #######################
+NH = [1 2 5];
     %.........................      solver Frontal       ............................
 
     inputs1 = {Vdes(3), vel(3),...
-        dif_z3(1,:), vel(1), (-pos(3)+pos(1)),...
-        dif_z3(2,:), vel(2), (-pos(3)+pos(2))}; 
+        dif_z3(NH(1),:), vel(NH(1)), (-pos(3)+pos(NH(1))),...
+        dif_z3(NH(2),:), vel(NH(2)), (-pos(3)+pos(NH(2))),...
+        dif_z3(NH(3),:), vel(NH(3)), (-pos(3)+pos(NH(3)))}; 
     [solutions1, diagnostics] = control_front{inputs1};
         
     A = solutions1{1}; acel(3) = A(:, 1);
-    V = solutions1{2}; hist_vp3 = [hist_vp3; V];
-    d_13 = solutions1{3}; d_13(1) = -pos(3)+pos(1);
-    d_23 = solutions1{4}; d_23(1) = -pos(3)+pos(2);
+    V = solutions1{2}; vphist(i,:,3) = V;
+    d_31 = solutions1{3}; d_31(1) = -pos(3)+pos(NH(1));
+    d_32 = solutions1{4}; d_32(1) = -pos(3)+pos(NH(2));
+    d_34 = solutions1{5}; d_34(1) = -pos(3)+pos(NH(3));
+    if diagnostics == 1
+    error('control_front failed 3');
+    end
+    
+     %.........................      solver lateral       ............................
+
+    inputs2 = {Zdes(3), zel(3), zel(NH(1)), d_31,...
+                                zel(NH(2)), d_32,...
+                                zel(NH(3)), d_34}; 
+    [solutions2, diagnostics] = control_lat{inputs2};
+    
+    Z = solutions2{1}; zel2(3) = Z(:, 2); zphist(i,:,3) = Z;
+%     II2 = solutions2{2}; hist_ll3 = [hist_ll3; II2];
+%     JJ2 = solutions2{3}; hist_lr3 = [hist_lr3; JJ2]; 
     
     if diagnostics == 1
-    error('control_front failed 2');
+    error('control_lat failed 3');
+    end
+
+%     ######################  VEHICULO 4 #######################
+NH = [2 5 6];
+    %.........................      solver Frontal       ............................
+
+    inputs1 = {Vdes(4), vel(4),...
+        dif_z4(NH(1),:), vel(NH(1)), (-pos(4)+pos(NH(1))),...
+        dif_z4(NH(2),:), vel(NH(2)), (-pos(4)+pos(NH(2))),...
+        dif_z4(NH(3),:), vel(NH(3)), (-pos(4)+pos(NH(3)))}; 
+    [solutions1, diagnostics] = control_front{inputs1};
+        
+    A = solutions1{1}; acel(4) = A(:, 1);
+    V = solutions1{2}; vphist(i,:,4) = V;
+    d_41 = solutions1{3}; d_41(1) = -pos(4)+pos(NH(1));
+    d_42 = solutions1{4}; d_42(1) = -pos(4)+pos(NH(2));
+    d_43 = solutions1{5}; d_43(1) = -pos(4)+pos(NH(3));
+    
+    if diagnostics == 1
+    error('control_front failed 4');
     end
     
 
      %.........................      solver lateral       ............................
 
-    inputs2 = {Zdes(3), zel(3), zel(1), d_13,...
-                                zel(2), d_23}; 
+    inputs2 = {Zdes(4), zel(4), zel(NH(1)), d_41,...
+                                zel(NH(2)), d_42,...
+                                zel(NH(3)), d_43}; 
     [solutions2, diagnostics] = control_lat{inputs2};
     
-    Z = solutions2{1}; zel2(3) = Z(:, 2); hist_zp3 = [hist_zp3; Z];
-    II2 = solutions2{2}; hist_ll3 = [hist_ll3; II2];
-    JJ2 = solutions2{3}; hist_lr3 = [hist_lr3; JJ2]; 
+    Z = solutions2{1}; zel2(4) = Z(:, 2); zphist(i,:,4) = Z;
+
     
     if diagnostics == 1
-    error('control_lat failed 2');
+    error('control_lat failed 4');
     end
 
+    
+    %     ######################  VEHICULO 5 #######################
+NH = [2 4 6];
+    %.........................      solver Frontal       ............................
+
+    inputs1 = {Vdes(5), vel(5),...
+        dif_z5(NH(1),:), vel(NH(1)), (-pos(5)+pos(NH(1))),...
+        dif_z5(NH(2),:), vel(NH(2)), (-pos(5)+pos(NH(2))),...
+        dif_z5(NH(3),:), vel(NH(3)), (-pos(5)+pos(NH(3)))}; 
+    [solutions1, diagnostics] = control_front{inputs1};
+        
+    A = solutions1{1}; acel(5) = A(:, 1);
+    V = solutions1{2}; vphist(i,:,5) = V;
+    d_31 = solutions1{3}; d_31(1) = -pos(5)+pos(NH(1));
+    d_32 = solutions1{4}; d_32(1) = -pos(5)+pos(NH(2));
+    d_34 = solutions1{5}; d_34(1) = -pos(5)+pos(NH(3));
+    if diagnostics == 1
+    error('control_front failed 5');
+    end
+    
+     %.........................      solver lateral       ............................
+
+    inputs2 = {Zdes(5), zel(5), zel(NH(1)), d_31,...
+                                zel(NH(2)), d_32,...
+                                zel(NH(3)), d_34}; 
+    [solutions2, diagnostics] = control_lat{inputs2};
+    
+    Z = solutions2{1}; zel2(5) = Z(:, 2); zphist(i,:,5) = Z;
+%     II2 = solutions2{2}; hist_ll3 = [hist_ll3; II2];
+%     JJ2 = solutions2{3}; hist_lr3 = [hist_lr3; JJ2]; 
+    
+    if diagnostics == 1
+    error('control_lat failed 5');
+    end
+
+%     ######################  VEHICULO 6 #######################
+NH = [2 4 5];
+    %.........................      solver Frontal       ............................
+
+    inputs1 = {Vdes(6), vel(6),...
+        dif_z3(NH(1),:), vel(NH(1)), (-pos(6)+pos(NH(1))),...
+        dif_z3(NH(2),:), vel(NH(2)), (-pos(6)+pos(NH(2))),...
+        dif_z3(NH(3),:), vel(NH(3)), (-pos(6)+pos(NH(3)))}; 
+    [solutions1, diagnostics] = control_front{inputs1};
+        
+    A = solutions1{1}; acel(6) = A(:, 1);
+    V = solutions1{2}; vphist(i,:,6) = V;
+    d_41 = solutions1{3}; d_41(1) = -pos(6)+pos(NH(1));
+    d_42 = solutions1{4}; d_42(1) = -pos(6)+pos(NH(2));
+    d_43 = solutions1{5}; d_43(1) = -pos(6)+pos(NH(3));
+    
+    if diagnostics == 1
+    error('control_front failed 6');
+    end
+    
+
+     %.........................      solver lateral       ............................
+
+    inputs2 = {Zdes(6), zel(6), zel(NH(1)), d_41,...
+                                zel(NH(2)), d_42,...
+                                zel(NH(3)), d_43}; 
+    [solutions2, diagnostics] = control_lat{inputs2};
+    
+    Z = solutions2{1}; zel2(6) = Z(:, 2); zphist(i,:,6) = Z;
+
+    
+    if diagnostics == 1
+    error('control_lat failed 6');
+    end
+
+    
+    
 
     %----------------------------------------------------------------------
         zel= zel2;
-    dif_z12 = [hist_zp2(end,:) - hist_zp1(end,:)];
-    dif_z13 = [hist_zp3(end,:) - hist_zp1(end,:)];
-    dif_z23 = [hist_zp3(end,:) - hist_zp2(end,:)];
 
+    dif_z1 = reshape(zphist(i,:,:)-zphist(i,:,1) , [N+1, nv])';
+    dif_z2 = reshape(zphist(i,:,:)-zphist(i,:,2) , [N+1, nv])';
+    dif_z3 = reshape(zphist(i,:,:)-zphist(i,:,3) , [N+1, nv])';
+    dif_z4 = reshape(zphist(i,:,:)-zphist(i,:,4) , [N+1, nv])';
+    dif_z5 = reshape(zphist(i,:,:)-zphist(i,:,5) , [N+1, nv])';
+    dif_z6 = reshape(zphist(i,:,:)-zphist(i,:,6) , [N+1, nv])';
+    
     pos = pos + T*vel;
     
 
@@ -617,7 +724,7 @@ for i = 1:L
     zhist = [zhist zel];
     ahist = [ahist acel];
     hist_pos = [hist_pos pos];
-    hist_dz = [hist_dz; dif_z12];
+%     hist_dz = [hist_dz; dif_z12];
 
 
     mpciter;
@@ -628,9 +735,8 @@ toc
 disp("it's done")
 
 %% plot
-dhist = [-hist_pos(1,:)+hist_pos(2,:); -hist_pos(1,:)+hist_pos(3,:)]
-vphist = cat(3, hist_vp1, hist_vp2, hist_vp3);
-zphist = cat(3, hist_zp1, hist_zp2, hist_zp3);
+dhist = [-hist_pos(1,:)+hist_pos(2,:); -hist_pos(1,:)+hist_pos(3,:); -hist_pos(1,:)+hist_pos(4,:)];
+
 
 Draw_object(vhist, zhist, vphist, zphist, dhist, T, 0)
 % save('myFile5.mat','vhist','zhist','vphist','zphist','dhist','T')
