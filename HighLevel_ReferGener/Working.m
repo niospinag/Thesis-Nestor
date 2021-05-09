@@ -24,7 +24,7 @@ Ds = 15; %Safety distance [m]
 Dl = 20; %lateral distance
 V_max = 80;
 A_max = 30;
-L = 6; %number of lanes
+L = 5; %number of lanes
 Mmax = L - 1;
 mmin = -L + 1;
 p_max = 1;
@@ -236,11 +236,12 @@ vel = [20; 20]; % velociodad inicial
 Vdes = [30; 80]; %velocidad deseada
 
 zel = [1; 2]; %carril inicial
-Zdes = [5; 5]; %carril deseado
+Zdes = [4; 4]; %carril deseado
 
 acel = [0 0]';
 %---distancia inicial de cada agente
 d1i = [-30]';
+pos = [0 -30]';
 
 % hold on
 vhist = vel;
@@ -298,7 +299,7 @@ hist_h12 = [];
 %% Optimization
 
 
-i = 0;
+
 zel2 = zel; %same dimentions
 time = 20;
 tic
@@ -306,12 +307,16 @@ sim_tim = 20;
 LR2 = [1];
 LR1 = [1];
 dif_z = ones(1,N+1)*[zel(2)-zel(1)];
+
 for i = 1:30
+    
+[Vref, Zref]= Gen_Refer(Vdes, vel, pos, Zdes,  zel, 1);   
+    
 %     ######################  VEHICULO 1 #######################
 
     %.........................      solver Frontal       ............................
 
-    inputs1 = {Vdes(1), vel(1), dif_z,...
+    inputs1 = {Vref(1), vel(1), dif_z,...
     vel(2), d1i(1)}; %, alogic1_1 , blogic1_1  , S1logic_1 , N1logic_1};
     [solutions1, diagnostics] = control_front{inputs1};
         
@@ -327,7 +332,7 @@ for i = 1:30
     hist_dis1 = [hist_dis1; dis];
      %.........................      solver lateral       ............................
 
-    inputs2 = {Zdes(1), zel(1), zel(2), dis}; 
+    inputs2 = {Zref(1), zel(1), zel(2), dis}; 
     [solutions2, diagnostics] = control_lat{inputs2};
     Z = solutions2{1}; zel2(1) = Z(:, 2); hist_zp1 = [hist_zp1; Z];
     I = solutions2{2}; hist_ll1 = [hist_ll1; I];
@@ -349,12 +354,12 @@ for i = 1:30
     error('control_lat failed 1');
     end
 
-    
+[Vref, Zref] = Gen_Refer(Vdes, vel, pos, Zdes,  zel, 2);
 %     ######################  VEHICULO 2 #######################
     
     %.........................      solver Frontal       ............................
 
-    inputs1 = {Vdes(2), vel(2), -dif_z,...
+    inputs1 = {Vref(2), vel(2), -dif_z,...
     vel(1), -d1i(1)}; %, alogic1_1 , blogic1_1  , S1logic_1 , N1logic_1};
     [solutions1, diagnostics] = control_front{inputs1};
         
@@ -375,7 +380,7 @@ for i = 1:30
     hist_dis2 = [hist_dis2; dis];
      %.........................      solver lateral       ............................
 
-    inputs2 = {Zdes(2), zel(2), zel(1), dis}; %, alogic1_2 , blogic1_2  , S1logic_2 , N1logic_2}; %G1logic_1
+    inputs2 = {Zref(2), zel(2), zel(1), dis}; %, alogic1_2 , blogic1_2  , S1logic_2 , N1logic_2}; %G1logic_1
     [solutions2, diagnostics] = control_lat{inputs2};
     
     Z = solutions2{1}; zel2(2) = Z(:, 2); hist_zp2 = [hist_zp2; Z];
@@ -392,7 +397,7 @@ for i = 1:30
     dif_z = [hist_zp2(end,:) - hist_zp1(end,:)];
     
     d1i = d1i + T * (vel(2:nv) - ones((nv - 1), 1) * vel(1));
-    
+    pos = pos + T*vel;
 
     vel = vel + T * acel;
     vhist = [vhist vel];

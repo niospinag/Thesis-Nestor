@@ -206,8 +206,8 @@ class Car:
             vel.append(self.m.getVarByName('v[{}]'.format(i)).x)
             acel.append(self.m.getVarByName('a[{}]'.format(i)).x)
             lane.append(self.m.getVarByName('z[{}]'.format(i)).x)
-            trn_lef.append(self.m.getVarByName('z[{}]'.format(i)).x)
-            trn_right.append(self.m.getVarByName('z[{}]'.format(i)).x)
+            trn_lef.append(self.m.getVarByName('ll[{}]'.format(i)).x)
+            trn_right.append(self.m.getVarByName('lr[{}]'.format(i)).x)
 
         self.hist_vp1.append(vel)
         self.hist_zp1.append(lane)
