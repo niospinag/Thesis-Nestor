@@ -17,7 +17,7 @@ nu = 1; % Number of inputs
 % MPC data
 Q = 1 * eye(1);
 R = 10 * eye(1);
-N = 5; %horizon
+N = 4; %horizon
 T = 0.3; %[s]
 Ds = 15; %Safety distance [m]
 Dl = 25; %lateral distance
@@ -207,7 +207,7 @@ for k = 1:N
     objective = objective + (v{k + 1} - Vd)' * Q * (v{k + 1} - Vd); % calculate obj
     % Feasible region
     constraints = [constraints, 0 <= v{k + 1} <= V_max, %no exceda las velocidades
-                                -A_max <= a{k} <= A_max];
+                                -3*A_max <= a{k} <= A_max];
 
     constraints = [constraints, v{k + 1} == v{k} + T * a{k}]; %velocidad futura
 
@@ -268,7 +268,7 @@ for k = 1:N
     %................................... (23)...............................
     constraints = log_imp(constraints, h14{k}, dis14{k}, a14{k});
     %................................... (24)...............................
-    constraints = [constraints, -2 * f14{k} + g14{k} + h14{k} <= 0];
+    constraints = [constraints, -2 * f14{k} + g15{k} + h14{k} <= 0];
     
     
     
@@ -544,10 +544,10 @@ KK = [];
 
 %------condiciones iniciales----------
 vel =  [25; 20; 20; 20; 30; 10]; % velociodad inicial
-Vdes = [15; 30; 40; 50; 60; 70]; %velocidad deseada
+Vdes = [20; 30; 40; 50; 60; 70]; %velocidad deseada
 
-zel =  [5; 5; 5; 5; 5; 5]; %carril inicial
-Zdes = [5; 5; 5; 5; 5; 5]; %carril deseado
+zel =  [1; 2; 3; 4; 5; 2]; %carril inicial
+Zdes = [5; 5; 5; 1; 1; 1]; %carril deseado
 
 acel = zeros(6,1);
 %---distancia inicial de cada agente
@@ -560,13 +560,11 @@ ahist = acel;
 hist_pos = pos;
 mpciter = 0;
 
-
-
 %% Optimization
 
 zel2 = zel; %same dimentions
 
-F = 13;
+F =40;
 nv = 6; %numero de vehiculos sin el agente no cooperativo
 vphist = nan(F, N+1, nv);
 zphist = nan(F, N+1, nv);
@@ -578,17 +576,20 @@ dif_z5 = ones(1, N+1).*(zel-zel(5));
 dif_z6 = ones(1, N+1).*(zel-zel(6));
 hist_NH1 = [];
 
+hist_Vref = [];
+
 tic
 for i = 1:F
+[Vref, Zref] = Gen_Refer(Vdes, vel, pos, Zdes,  zel, 1);
 %     ######################  VEHICULO 1 #######################
 % neightbors
 %NH = [2 3 4 5];
-zel= zel2;
+%zel= zel2;
 NH = closest(pos, zel, 1);
-hist_NH1 = [hist_NH1; NH] ;
+
     %.........................      solver Frontal       ............................
 
-    inputs1 = {Vdes(1), vel(1), ...
+    inputs1 = {Vref(1), vel(1), ...
         dif_z1(NH(1),:),vel(NH(1)), (-pos(1)+pos(NH(1))),...
         dif_z1(NH(2),:),vel(NH(2)), (-pos(1)+pos(NH(2))),...
         dif_z1(NH(3),:),vel(NH(3)), (-pos(1)+pos(NH(3))),...
@@ -608,7 +609,7 @@ hist_NH1 = [hist_NH1; NH] ;
 %     hist_dis1 = [hist_dis1; d_12];
      %.........................      solver lateral       ............................
 
-    inputs2 = {Zdes(1), zel(1), zel(NH(1)), d_12,...
+    inputs2 = {Zref(1), zel(1), zel(NH(1)), d_12,...
                                 zel(NH(2)), d_13,...
                                 zel(NH(3)), d_14,...
                                 zel(NH(4)), d_15}; 
@@ -621,14 +622,14 @@ hist_NH1 = [hist_NH1; NH] ;
     error('control_lat failed 1');
     end
 
-    
+[Vref, Zref] = Gen_Refer(Vdes, vel, pos, Zdes,  zel, 2);
 %     ######################  VEHICULO 2 #######################
 %NH = [1 3 4 5];
-zel= zel2;
+%zel= zel2;
 NH = closest(pos, zel, 2);
     %.........................      solver Frontal       ............................
 
-    inputs1 = {Vdes(2), vel(2),...
+    inputs1 = {Vref(2), vel(2),...
         dif_z2(NH(1),:), vel(NH(1)), (-pos(2)+pos(NH(1))),...
         dif_z2(NH(2),:), vel(NH(2)), (-pos(2)+pos(NH(2))),...
         dif_z2(NH(3),:), vel(NH(3)), (-pos(2)+pos(NH(3))),...
@@ -649,7 +650,7 @@ NH = closest(pos, zel, 2);
   
      %.........................      solver lateral       ............................
 
-    inputs2 = {Zdes(2), zel(2), zel(NH(1)), d_12,...
+    inputs2 = {Zref(2), zel(2), zel(NH(1)), d_12,...
                                 zel(NH(2)), d_23,...
                                 zel(NH(3)), d_24,...
                                 zel(NH(4)), d_25}; 
@@ -662,14 +663,14 @@ NH = closest(pos, zel, 2);
     if diagnostics == 1
     error('control_lat failed 2');
     end
-
+[Vref, Zref] = Gen_Refer(Vdes, vel, pos, Zdes,  zel, 3);
 %     ######################  VEHICULO 3 #######################
 %NH = [1 2 4 5];
-zel= zel2;
+%zel= zel2;
 NH = closest(pos, zel, 3);
     %.........................      solver Frontal       ............................
 
-    inputs1 = {Vdes(3), vel(3),...
+    inputs1 = {Vref(3), vel(3),...
         dif_z3(NH(1),:), vel(NH(1)), (-pos(3)+pos(NH(1))),...
         dif_z3(NH(2),:), vel(NH(2)), (-pos(3)+pos(NH(2))),...
         dif_z3(NH(3),:), vel(NH(3)), (-pos(3)+pos(NH(3))),...
@@ -688,7 +689,7 @@ NH = closest(pos, zel, 3);
     
      %.........................      solver lateral       ............................
 
-    inputs2 = {Zdes(3), zel(3), zel(NH(1)), d_31,...
+    inputs2 = {Zref(3), zel(3), zel(NH(1)), d_31,...
                                 zel(NH(2)), d_32,...
                                 zel(NH(3)), d_34,...
                                 zel(NH(4)), d_35}; 
@@ -701,14 +702,14 @@ NH = closest(pos, zel, 3);
     if diagnostics == 1
     error('control_lat failed 3');
     end
-
+[Vref, Zref] = Gen_Refer(Vdes, vel, pos, Zdes,  zel, 4);
 %     ######################  VEHICULO 4 #######################
 %NH = [2 3 5 6];
-zel= zel2;
+%zel= zel2;
 NH = closest(pos, zel, 4);
     %.........................      solver Frontal       ............................
 
-    inputs1 = {Vdes(4), vel(4),...
+    inputs1 = {Vref(4), vel(4),...
         dif_z4(NH(1),:), vel(NH(1)), (-pos(4)+pos(NH(1))),...
         dif_z4(NH(2),:), vel(NH(2)), (-pos(4)+pos(NH(2))),...
         dif_z4(NH(3),:), vel(NH(3)), (-pos(4)+pos(NH(3))),...
@@ -729,7 +730,7 @@ NH = closest(pos, zel, 4);
 
      %.........................      solver lateral       ............................
 
-    inputs2 = {Zdes(4), zel(4), zel(NH(1)), d_41,...
+    inputs2 = {Zref(4), zel(4), zel(NH(1)), d_41,...
                                 zel(NH(2)), d_42,...
                                 zel(NH(3)), d_43,...
                                 zel(NH(4)), d_45}; 
@@ -742,14 +743,15 @@ NH = closest(pos, zel, 4);
     error('control_lat failed 4');
     end
 
-    
+[Vref, Zref] = Gen_Refer(Vdes, vel, pos, Zdes,  zel, 5);
+hist_Vref = [hist_Vref; [Vref', Zref']];
     %     ######################  VEHICULO 5 #######################
 %NH = [2 3 4 6];
-zel= zel2;
+%zel= zel2;
 NH = closest(pos, zel, 5);
     %.........................      solver Frontal       ............................
 
-    inputs1 = {Vdes(5), vel(5),...
+    inputs1 = {Vref(5), vel(5),...
         dif_z5(NH(1),:), vel(NH(1)), (-pos(5)+pos(NH(1))),...
         dif_z5(NH(2),:), vel(NH(2)), (-pos(5)+pos(NH(2))),...
         dif_z5(NH(3),:), vel(NH(3)), (-pos(5)+pos(NH(3))),...
@@ -769,7 +771,7 @@ NH = closest(pos, zel, 5);
     
      %.........................      solver lateral       ............................
 
-    inputs2 = {Zdes(5), zel(5), zel(NH(1)), d_51,...
+    inputs2 = {Zref(5), zel(5), zel(NH(1)), d_51,...
                                 zel(NH(2)), d_52,...
                                 zel(NH(3)), d_54,...
                                 zel(NH(4)), d_56}; 
@@ -782,14 +784,18 @@ NH = closest(pos, zel, 5);
     if diagnostics == 1
     error('control_lat failed 5');
     end
+    
+    
+[Vref, Zref] = Gen_Refer(Vdes, vel, pos, Zdes,  zel, 6);
 
 %     ######################  VEHICULO 6 #######################
 %NH = [2 3 4 5];
-zel= zel2;
+%zel= zel2;
 NH = closest(pos, zel, 6);
+hist_NH1 = [hist_NH1; NH] ;
     %.........................      solver Frontal       ............................
 
-    inputs1 = {Vdes(6), vel(6),...
+    inputs1 = {Vref(6), vel(6),...
         dif_z6(NH(1),:), vel(NH(1)), (-pos(6)+pos(NH(1))),...
         dif_z6(NH(2),:), vel(NH(2)), (-pos(6)+pos(NH(2))),...
         dif_z6(NH(3),:), vel(NH(3)), (-pos(6)+pos(NH(3))),...
@@ -810,7 +816,7 @@ NH = closest(pos, zel, 6);
 
      %.........................      solver lateral       ............................
 
-    inputs2 = {Zdes(6), zel(6), zel(NH(1)), d_61,...
+    inputs2 = {Zref(6), zel(6), zel(NH(1)), d_61,...
                                 zel(NH(2)), d_62,...
                                 zel(NH(3)), d_63,...
                                 zel(NH(4)), d_64}; 
@@ -827,7 +833,7 @@ NH = closest(pos, zel, 6);
     
 
     %----------------------------------------------------------------------
-        zel= zel2;
+    zel= zel2;
 
     dif_z1 = reshape(zphist(i,:,:)-zphist(i,:,1) , [N+1, nv])';
     dif_z2 = reshape(zphist(i,:,:)-zphist(i,:,2) , [N+1, nv])';
