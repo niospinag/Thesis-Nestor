@@ -1,26 +1,57 @@
 clc
-clear all 
+clear 
 
-
+%% Dinamyc System
 %--------------------------------------------------------------------------
 % SYSTEM
 %--------------------------------------------------------------------------
 %..........................................................................
 % System constrains
 %..........................................................................
+% Adjacency Matrix
+M_A = [0 0; 0 1];
+
+g1 = 2;
+cx1 = 0;
+cx2 = 0.2;
+cx3 = 1;
+cx21 = (1 - cx2);
+cx4 = 1;
 
 
-% States
-Ae = [1 0; -1 0; 0 1; 0 -1];
-be = [100 100 100 100]';
+%..........................................................................
+%--------------------------------------------------------------------------
+% creando la ecuacion (5)
+Ts = 0.05; %delta time
 
-% Energy
+A = [0 1; -1 0];
 
-umax = 1;
-umin = -1;
+C = [0 1];
 
-Au = [1 -1]';
-bu = [umax -umin]';
+Al = [0.9988 0.05; -0.05 0.9988];
+A1 = Al;
+A2 = Al;
+A3 = Al;
+A4 = Al;
+
+B_l = [0.16 0.08]';
+
+B1o = [0.1 0.05]';
+B1 = (g1+cx1)*B1o;
+
+B2o = [-0.08 -0.05]';
+B2 = (cx2 + cx21)*B2o;
+
+B3o = [-0.19 -0.1]';
+B3 = cx3*B3o;
+
+B4o = [0.13 0.08]';
+B4 = cx4*B4o;
+
+C1 = C;
+C2 = C;
+C3 = C;
+C4 = C;
 
 % Disturbances
 md = 0.03;
@@ -30,50 +61,18 @@ dmin = -3*md;
 Ad = [1 -1]';
 bd = [dmax -dmin]';
 
+% Energy
+umax = 1;
+umin = -1;
 
-% Adjacency Matrix
+% Constraints
+A_err = [1 0; -1 0; 0 1; 0 -1];
+b_err = [100 100 100 100]';
 
-M_A = [0 0; 0 1];
+Au = [1 -1]';
+bu = [umax -umin]';
 
-g1 = 2;
-cx1 = 0;
-cx2 = 0.2;
-cx3 = 1;
-cx21 = (1 - cx2);
-cx4 = 1;
-%..........................................................................
-%--------------------------------------------------------------------------
-% creando la ecuacion (5)
-Ts = 0.05;
-
-A = [0 1; -1 0];
-C = [0 1];
-
-Al = [0.9988 0.05; -0.05 0.9988];
-B_l = [0.16 0.08]';
-
-A1 = Al;
-B1o = [0.1 0.05]';
-
-B1 = (g1+cx1)*B1o;
-C1 = C;
-
-A2 = Al;
-B2o = [-0.08 -0.05]';
-
-B2 = (cx2 + cx21)*B2o;
-C2 = C;
-
-A3 = Al;
-B3o = [-0.19 -0.1]';
-B3 = cx3*B3o;
-C3 = C;
-
-A4 = Al;
-B4o = [0.13 0.08]';
-B4 = cx4*B4o;
-C4 = C;
-
+%% MPC Tuning
 %--------------------------------------------------------------------------
 % MPC tunning
 %--------------------------------------------------------------------------
@@ -82,7 +81,7 @@ C4 = C;
 %..........................................................................
 
 L = 40;%Horizonte del MHE
-
+T = 40;%horizonte del mpc
 %..........................................................................
 % MHE weights
 %..........................................................................
@@ -91,21 +90,11 @@ W = 1000;
 Wd = 100;
 
 %..........................................................................
-% Forward finite horizon
+% MPC Weights
 %..........................................................................
 
-T = 40;%horizonte del mpc
-
-%..........................................................................
-% Weights
-%..........................................................................
-
-Q = [1e1 0; 0 1e1];
+Q = [10 0; 0 10];
 R = 0.01;
-
-%..........................................................................
-%--------------------------------------------------------------------------
-
 
 %--------------------------------------------------------------------------
 % QUADRATIC OPTIMIZATION PROBLEM
@@ -116,153 +105,45 @@ R = 0.01;
 
 % States number
 nx = size(A1,2);
-
 % Control signals number
 nu = size(B1,2);
-
 % Disturbance number
 nd = size(B1,2);
-
 % Output number
 nc = size(eye(2),1);
-
 % Output number
 nc1 = size( C1, 1 );
 nc3 = size( C3, 1 );
 nc2 = size( C2, 1 );
 nc4 = size( C4, 1 );
 
-%..........................................................................
-% Construción Gxc, Guc
-%..........................................................................
 
-Gxc1 = zeros( nc1*(L+1), nx);
-Guc1 = zeros( nc1*(L+1), nu*L);
-Ggc1 = zeros( nc1*(L+1), nx);
 
-Gxc2 = zeros( nc2*(L+1), nx);
-Guc2 = zeros( nc2*(L+1), nu*L);
-Ggc2 = zeros( nc2*(L+1), nx);
+%%  Construction A_, B_, P_
+%  Equation (8)
+A_ = zeros( nx*T, nx); %Gx
 
-Gxc3 = zeros( nc3*(L+1), nx);
-Guc3 = zeros( nc3*(L+1), nu*L);
-Ggc3 = zeros( nc3*(L+1), nx);
+B_1 = zeros( nx*T, nu*T); %Gu
+B_2 = zeros( nx*T, nu*T); %Gu
+B_3 = zeros( nx*T, nu*T); %Gu
+B_4 = zeros( nx*T, nu*T); %Gu
 
-Gxc4 = zeros( nc4*(L+1), nx);
-Guc4 = zeros( nc4*(L+1), nu*L);
-Ggc4 = zeros( nc4*(L+1), nx);
-
-Gxc1( 1:nc1, :) = C1;
-Gxc2( 1:nc2, :) = C2;
-Gxc3( 1:nc3, :) = C3;
-Gxc4( 1:nc4, :) = C4;
-
-var11 = C1;
-var21 = C2;
-var31 = C3;
-var41 = C4;
-
-for i = 2:L+1
-    
-    var12 = var11;
-    var22 = var21;
-    var32 = var31;
-    var42 = var41;
-    
-    var11 = var11*A1;
-    var21 = var21*A2;
-    var31 = var31*A3;
-    var41 = var41*A4;
-   
-%     Gxc = Ae equation 15
-    Gxc1( nc1*(i-1)+1:nc1*i , : ) = var11;
-    Gxc2( nc2*(i-1)+1:nc2*i , : ) = var21;
-    Gxc3( nc3*(i-1)+1:nc3*i , : ) = var31;
-    Gxc4( nc4*(i-1)+1:nc4*i , : ) = var41;
-    
-    for j = 1:L-i+2
-%         Guc = Be
-        Guc1( nc1*(j+i-2)+1:nc1*(j+i-1) , nu*(j-1)+1:nu*j ) = (var11/A1)*B1;
-        Guc2( nc2*(j+i-2)+1:nc2*(j+i-1) , nu*(j-1)+1:nu*j ) = (var21/A2)*B2;
-        Guc3( nc3*(j+i-2)+1:nc3*(j+i-1) , nu*(j-1)+1:nu*j ) = (var31/A3)*B3;
-        Guc4( nc4*(j+i-2)+1:nc4*(j+i-1) , nu*(j-1)+1:nu*j ) = (var41/A4)*B4;
-%        
-%       Ggc = Pe
-        Ggc1( nc1*(j+i-2)+1:nc1*(j+i-1) , nx*(j-1)+1:nx*j ) = var12;
-        Ggc2( nc2*(j+i-2)+1:nc2*(j+i-1) , nx*(j-1)+1:nx*j ) = var22;
-        Ggc3( nc3*(j+i-2)+1:nc3*(j+i-1) , nx*(j-1)+1:nx*j ) = var32;
-        Ggc4( nc4*(j+i-2)+1:nc4*(j+i-1) , nx*(j-1)+1:nx*j ) = var42;        
-    end
-end
-
-Guc1 = -Guc1;
-Guc2 = -Guc2;
-Guc3 = -Guc3;
-Guc4 = -Guc4;
-
-clear var11 var12 var21 var22 var31 var32 var41 var42
-%
-%..........................................................................
-% Gx, Gu, Gw construction
-%..........................................................................
-
-Gx = zeros( nx*T, nx);
-Gu = zeros( nx*T, nu*T);
-Gg = zeros( nx*T, nx*T);
-
-Gu2 = zeros( nx*T, nu*T);
-Gu3 = zeros( nx*T, nu*T);
-Gu4 = zeros( nx*T, nu*T);
-
-var = eye(nx);
-
-var31 = eye(nx);
-var21 = eye(nx);
-var3 = eye(nx);
-var41 = eye(nx);
-% equation 8
+P_ = zeros( nx*T, nx*T); %Gg
 for i = 1:T
-    
-    var2 = var*B1;
-    var32 = var31*B3;
-    var22 = var21*B2;
-    var42 = var41*B4;
-    
-    
+    A_( nx*(i-1)+1:nx*i  ,:) = A1^i;
     for j = 1:T-i+1
-        %Gu = B
-        Gu( nx*(j+i-2)+1:nx*(j+i-1) , nu*(j-1)+1:nu*j ) = var2;
-        Gu3( nx*(j+i-2)+1:nx*(j+i-1) , nu*(j-1)+1:nu*j ) = var32;
-        Gu2( nx*(j+i-2)+1:nx*(j+i-1) , nu*(j-1)+1:nu*j ) = var22;
-        Gu4( nx*(j+i-2)+1:nx*(j+i-1) , nu*(j-1)+1:nu*j ) = var42;
-
-        Gg( nx*(j+i-2)+1:nx*(j+i-1) , nx*(j-1)+1:nx*j ) = var3;
+        B_1( nx*(j+i-2)+1:nx*(j+i-1) , nu*(j-1)+1:nu*j ) = -(A1^(i-1))*B1;
+        B_2( nx*(j+i-2)+1:nx*(j+i-1) , nu*(j-1)+1:nu*j ) = -(A2^(i-1))*B2;
+        B_3( nx*(j+i-2)+1:nx*(j+i-1) , nu*(j-1)+1:nu*j ) = -(A3^(i-1))*B3;
+        B_4( nx*(j+i-2)+1:nx*(j+i-1) , nu*(j-1)+1:nu*j ) = -(A4^(i-1))*B4;
+        
+        P_( nx*(j+i-2)+1:nx*(j+i-1) , nx*(j-1)+1:nx*j ) = (A1^(i-1));
     end
-    
-    var = var*A1;
-    var3 = var3*A1;
-    var31 = var31*A3;
-    var21 = var21*A2;
-    var41 = var41*A4;
-%     Gx = A
-    Gx( nx*(i-1)+1:nx*i  ,:) = var;
+        
 end
 
-Gu = -Gu;
-Gw = Gu;
-Gu3 = -Gu3;
-Gu2 = -Gu2;
-Gu4 = -Gu4;
-clear var var2
-
-
-%..........................................................................
-% W_hat construction
-%..........................................................................
-
-W_hat = kron(eye(L+1),W);
-
-Wd_hat = kron( eye(L) , Wd );
+%% MPC
+% equation 11
 
 %..........................................................................
 % Q_hat, R_hat construction
@@ -272,52 +153,94 @@ Q_hat = kron( eye(T), Q );
 
 R_hat = kron( eye(T), R );
 
+
+H = B_1'*Q_hat*B_1 + R_hat;
+H = ( H+H' )/2;
+
+H2 = B_2'*Q_hat*B_2 + R_hat;
+H2 = ( H2+H2' )/2;
+
+H3 = B_3'*Q_hat*B_3 + R_hat;
+H3 = ( H3+H3' )/2;
+
+H4 = B_4'*Q_hat*B_4 + R_hat;
+H4 = ( H4+H4' )/2;
+
+
+%% Costruction A_e, B_e, P_e
+% Equation (15)
+Ae_1 = zeros( nc1*(L+1), nx); %Gxc1
+Ae_2 = zeros( nc1*(L+1), nx); %Gxc2
+Ae_3 = zeros( nc1*(L+1), nx); %Gxc3
+Ae_4 = zeros( nc1*(L+1), nx); %Gxc4
+
+Be_1 = zeros( nc1*(L+1), nu*L); %Guc1
+Be_2 = zeros( nc1*(L+1), nu*L); %Guc2
+Be_3 = zeros( nc1*(L+1), nu*L); %Guc3
+Be_4 = zeros( nc1*(L+1), nu*L); %Guc4
+
+Pe_1 = zeros( nc1*(L+1), nx); %Ggc1
+Pe_2 = zeros( nc1*(L+1), nx); %Ggc2
+Pe_3 = zeros( nc1*(L+1), nx); %Ggc3
+Pe_4 = zeros( nc1*(L+1), nx); %Ggc4
+
+Ae_1( 1:nc1, :) = C1;
+for i = 2:L+1
+    Ae_1( nc1*(i-1)+1:nc1*i , : ) = C1*(A1^(i-1));
+    Ae_2( nc1*(i-1)+1:nc1*i , : ) = C2*(A2^(i-1));
+    Ae_3( nc1*(i-1)+1:nc1*i , : ) = C3*(A3^(i-1));
+    Ae_4( nc1*(i-1)+1:nc1*i , : ) = C4*(A4^(i-1));
+    for j = 1:L-i+2
+        Be_1( nc1*(j+i-2)+1:nc1*(j+i-1) , nu*(j-1)+1:nu*j ) = -(C1*(A1^(i-2)))*B1;
+        Be_2( nc1*(j+i-2)+1:nc1*(j+i-1) , nu*(j-1)+1:nu*j ) = -(C2*(A2^(i-2)))*B2;
+        Be_3( nc1*(j+i-2)+1:nc1*(j+i-1) , nu*(j-1)+1:nu*j ) = -(C3*(A3^(i-2)))*B3;
+        Be_4( nc1*(j+i-2)+1:nc1*(j+i-1) , nu*(j-1)+1:nu*j ) = -(C4*(A4^(i-2)))*B4;
+        
+        Pe_1( nc1*(j+i-2)+1:nc1*(j+i-1) , nx*(j-1)+1:nx*j ) = (C1*(A1^(i-2))); 
+        Pe_2( nc1*(j+i-2)+1:nc1*(j+i-1) , nx*(j-1)+1:nx*j ) = (C2*(A2^(i-2))); 
+        Pe_3( nc1*(j+i-2)+1:nc1*(j+i-1) , nx*(j-1)+1:nx*j ) = (C3*(A3^(i-2))); 
+        Pe_4( nc1*(j+i-2)+1:nc1*(j+i-1) , nx*(j-1)+1:nx*j ) = (C4*(A4^(i-2))); 
+    end
+end
+
+
+
+%%  MHE
+% equation 18
+
 %..........................................................................
-% Hm construction
+% W_hat construction
 %..........................................................................
 
-% MHE
-% equation 18
-Hm1 = [Gxc1'*W_hat*Gxc1  Gxc1'*W_hat*Guc1;
-      Guc1'*W_hat*Gxc1  Guc1'*W_hat*Guc1+Wd_hat];
+W_hat = kron(eye(L+1),W);
+
+Wd_hat = kron( eye(L) , Wd );
+
+
+Hm1 = [Ae_1'*W_hat*Ae_1  Ae_1'*W_hat*Be_1;
+      Be_1'*W_hat*Ae_1  Be_1'*W_hat*Be_1+Wd_hat];
   
 Hm1 =( Hm1+Hm1')/2;
 
 
-Hm2 = [Gxc2'*W_hat*Gxc2 Gxc2'*W_hat*Guc2;
-      Guc2'*W_hat*Gxc2 Guc2'*W_hat*Guc2+Wd_hat];
+Hm2 = [Ae_2'*W_hat*Ae_2 Ae_2'*W_hat*Be_2;
+      Be_2'*W_hat*Ae_2 Be_2'*W_hat*Be_2+Wd_hat];
   
 Hm2 =( Hm2+Hm2')/2;
 
 
-Hm3 = [Gxc3'*W_hat*Gxc3 Gxc3'*W_hat*Guc3;
-      Guc3'*W_hat*Gxc3 Guc3'*W_hat*Guc3+Wd_hat];
+Hm3 = [Ae_3'*W_hat*Ae_3 Ae_3'*W_hat*Be_3;
+      Be_3'*W_hat*Ae_3 Be_3'*W_hat*Be_3+Wd_hat];
   
 Hm3 =( Hm3+Hm3')/2;
 
-Hm4 = [Gxc4'*W_hat*Gxc4 Gxc4'*W_hat*Guc4;
-      Guc4'*W_hat*Gxc4 Guc4'*W_hat*Guc4+Wd_hat];
+Hm4 = [Ae_4'*W_hat*Ae_4 Ae_4'*W_hat*Be_4;
+      Be_4'*W_hat*Ae_4 Be_4'*W_hat*Be_4+Wd_hat];
   
 Hm4 =( Hm4+Hm4')/2;
 
 %..........................................................................
-% H construction
-%..........................................................................
-% equation 11
-H = Gu'*Q_hat*Gu + R_hat;
-H = ( H+H' )/2;
-
-H2 = Gu2'*Q_hat*Gu2 + R_hat;
-H2 = ( H2+H2' )/2;
-
-H3 = Gu3'*Q_hat*Gu3 + R_hat;
-H3 = ( H3+H3' )/2;
-
-H4 = Gu4'*Q_hat*Gu4 + R_hat;
-H4 = ( H4+H4' )/2;
-
-%..........................................................................
-% Constrains Augmented System
+%% Constrains Augmented System
 %..........................................................................
 
 % MPC
@@ -331,8 +254,8 @@ AA = AU;
 
 % MHE
 
-Ae_hat_m = kron( eye(1), Ae );
-be_hat_m = kron( ones(1,1), be );
+Ae_hat_m = kron( eye(1), A_err );
+be_hat_m = kron( ones(1,1), b_err );
 
 Ad_hat_m = kron( eye(L), Ad );
 bd_hat_m = kron( ones(L,1), bd );
@@ -607,17 +530,17 @@ for i = L+1:length(t)
         gamma4m = cx4*kron( eye(L), B2o )*(up2 + u2m(nx+1:end , :));
         
         
-        Fm1 = [up1'*Guc1'*W_hat*Gxc1 + gammam'*Ggc1'*W_hat*Gxc1 - y1'*W_hat*Gxc1  ...
-            up1'*Guc1'*W_hat*Guc1+gammam'*Ggc1'*W_hat*Guc1-y1'*W_hat*Guc1];
+        Fm1 = [up1'*Be_1'*W_hat*Ae_1 + gammam'*Pe_1'*W_hat*Ae_1 - y1'*W_hat*Ae_1  ...
+            up1'*Be_1'*W_hat*Be_1+gammam'*Pe_1'*W_hat*Be_1-y1'*W_hat*Be_1];
         
-        Fm2 = [up2'*Guc2'*W_hat*Gxc2+gamma2m'*Ggc2'*W_hat*Gxc2-y2'*W_hat*Gxc2  ...
-            up2'*Guc2'*W_hat*Guc2+gamma2m'*Ggc2'*W_hat*Guc2-y2'*W_hat*Guc2];
+        Fm2 = [up2'*Be_2'*W_hat*Ae_2+gamma2m'*Pe_2'*W_hat*Ae_2-y2'*W_hat*Ae_2  ...
+            up2'*Be_2'*W_hat*Be_2+gamma2m'*Pe_2'*W_hat*Be_2-y2'*W_hat*Be_2];
         
-        Fm3 = [up3'*Guc3'*W_hat*Gxc3+gamma3m'*Ggc3'*W_hat*Gxc3-y3'*W_hat*Gxc3  ...
-            up3'*Guc3'*W_hat*Guc3+gamma3m'*Ggc3'*W_hat*Guc3-y3'*W_hat*Guc3];   
+        Fm3 = [up3'*Be_3'*W_hat*Ae_3+gamma3m'*Pe_3'*W_hat*Ae_3-y3'*W_hat*Ae_3  ...
+            up3'*Be_3'*W_hat*Be_3+gamma3m'*Pe_3'*W_hat*Be_3-y3'*W_hat*Be_3];   
         
-        Fm4 = [up4'*Guc4'*W_hat*Gxc4+gamma4m'*Ggc4'*W_hat*Gxc4-y4'*W_hat*Gxc4  ...
-            up4'*Guc4'*W_hat*Guc4+gamma4m'*Ggc4'*W_hat*Guc4-y4'*W_hat*Guc4];   
+        Fm4 = [up4'*Be_4'*W_hat*Ae_4+gamma4m'*Pe_4'*W_hat*Ae_4-y4'*W_hat*Ae_4  ...
+            up4'*Be_4'*W_hat*Be_4+gamma4m'*Pe_4'*W_hat*Be_4-y4'*W_hat*Be_4];   
         
         
         
@@ -705,7 +628,7 @@ for i = L+1:length(t)
     iter = 1;
     
     while norm([u;u2;u3;u4] - ua) > 1e-3 && iter <= 10000
-        
+        u1
         ua = [u;u2;u3;u4];
 %         gamma = pi
 %         Gg = P
@@ -715,40 +638,32 @@ for i = L+1:length(t)
         gamma4 = cx4*kron( eye(T), B2o )*(u2+dd2);
         
 %         equation 11
-        F = e'*Gx'*Q_hat*Gu + gamma'*Gg'*Q_hat*Gu + dd1'*Gu'*Q_hat*Gu;
-        F3 = e3'*Gx'*Q_hat*Gu3 + gamma3'*Gg'*Q_hat*Gu3 + dd3'*Gu3'*Q_hat*Gu3;
-        F2 = e2'*Gx'*Q_hat*Gu2 + gamma2'*Gg'*Q_hat*Gu2 + dd2'*Gu2'*Q_hat*Gu2;
-        F4 = e4'*Gx'*Q_hat*Gu4 + gamma4'*Gg'*Q_hat*Gu4 + dd4'*Gu4'*Q_hat*Gu4;
+        F1 = e'*A_'*Q_hat*B_1 + gamma'*P_'*Q_hat*B_1 + dd1'*B_1'*Q_hat*B_1;
+        F3 = e3'*A_'*Q_hat*B_3 + gamma3'*P_'*Q_hat*B_3 + dd3'*B_3'*Q_hat*B_3;
+        F2 = e2'*A_'*Q_hat*B_2 + gamma2'*P_'*Q_hat*B_2 + dd2'*B_2'*Q_hat*B_2;
+        F4 = e4'*A_'*Q_hat*B_4 + gamma4'*P_'*Q_hat*B_4 + dd4'*B_4'*Q_hat*B_4;
         
 %         PROCESO DE OPTIMIZACION ADMM
-        u = ( H + theta*( AA'*AA ) )  \ ( AA'*( theta*s + Lambda ) - F' );
-        
+        u = ( H + theta*( AA'*AA ) )  \ ( AA'*( theta*s + Lambda ) - F1' );
         s = min( AA*u - ( 1/theta )*Lambda , bU );
-        
         Lambda = Lambda + theta*(-AA*u + s);%
         
         
         
         u2 = ( H2 + theta*( AA'*AA ) )  \ ( AA'*( theta*s2 + Lambda2 ) - F2' );
-        
         s2 = min( AA*u2 - ( 1/theta )*Lambda2 , bU );
-        
         Lambda2 = Lambda2 + theta*(-AA*u2 + s2);  
         
         
         
         u3 = ( H3 + theta*( AA'*AA ) )  \ ( AA'*( theta*s3 + Lambda3 ) - F3' );
-        
         s3 = min( AA*u3 - ( 1/theta )*Lambda3 , bU );
-        
         Lambda3 = Lambda3 + theta*(-AA*u3 + s3);
         
         
         
         u4 = ( H4 + theta*( AA'*AA ) )  \ ( AA'*( theta*s4 + Lambda4 ) - F4' );
-        
         s4 = min( AA*u4 - ( 1/theta )*Lambda4 , bU );
-        
         Lambda4 = Lambda4 + theta*(-AA*u4 + s4);
         
         
@@ -777,36 +692,30 @@ for i = L+1:length(t)
     X1( i+1 , : ) = x1;
     
     
-    
-    
     % System agent 2
     di = md*randn(1,1);
     D2( i, : ) = di;
     x2 = A2*x2 + B2o*(u2(1,1) + di);
-    
     % State agent 2
     X2( i+1 , : ) = x2;
     
-    
-  
     
     % System agent 3
     di = md*randn(1,1);
     D3( i, : ) = di;
     x3 = A3*x3 + B3o*(u3(1,1) + di);
-    
     % State agent 3
     X3( i+1 , : ) = x3;
     
     
     
     
-     % System agent 3
+     % System agent 4
     di = md*randn(1,1);
     D4( i, : ) = di;
     x4 = A4*x4 + B4o*(u4(1,1) + di);
     
-    % State agent 3
+    % State agent 4
     X4( i+1 , : ) = x4;
     
     

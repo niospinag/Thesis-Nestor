@@ -48,7 +48,7 @@ z_2 = sdpvar(1, 1); z_3 = sdpvar(1, 1); %carril del vehiculo j
 dis12 = sdpvar(ones(1, N + 1), ones(1, N + 1)); %distancia entre vehiculo 1 y 2
 dz = intvar(ones(1, N + 1), ones(1, N + 1)); %z2-z1
 
-%% neihboorhod variables
+%% neihborhood variables
 
 a12 = binvar(ones(1, N), ones(1, N));
 b12 = binvar(ones(1, N), ones(1, N));
@@ -125,35 +125,12 @@ for k = 1:N
 
 end
 
-
-%     %................................... (12)...............................
-%     constraints = log_min(constraints, n12{N+1}, dz{N+1}, 0);
-%     constraints = log_may(constraints, th12{N+1}, dz{N+1}, 0);
-%     constraints = log_and(constraints, a12{N+1}, n12{N+1}, th12{N+1});
-%     %................................... (13)...............................
-%     constraints = log_may(constraints, b12{N+1}, dis12{N+1}, 0);
-%     %................................... (18)...............................
-%     constraints = log_and(constraints, ab12{k}, a12{N+1}, b12{N+1});
-%     %................................... (21)...............................
-%     constraints = log_imp(constraints, f12{k}, dis12{k}, ab12{k});
-%     %................................... (22)...............................
-%     constraints = log_imp(constraints, g12{k}, Ds, a12{k});
-%     %................................... (23)...............................
-%     constraints = log_imp(constraints, h12{k}, dis12{k}, a12{k});
-%     %................................... (24)...............................
-%     constraints = [constraints, -2 * f12{k} + g12{k} + h12{k} <= 0];
-
-
-
-
-
-
 parameters_in = {Vd, v{1},  [dz{:}], ...
                         v_2, dis12{1}}; %, Aa1 , Bb1 , Ss1 , Nn1}; %, Gg1
 
 solutions_out = {[a{:}], [v{:}], [dis12{:}] ,[a12{:}], [b12{:}], [ab12{:}], [f12{:}] ...
                  ,[g12{:}], [h12{:}] }; 
-% controller = optimizer(constraints, objective,sdpsettings('verbose',1),[x{1};r],u{1});
+
 control_front = optimizer(constraints, objective, sdpsettings('solver', 'gurobi'), parameters_in, solutions_out);
 
 %% making the optimizer lateral
@@ -214,13 +191,12 @@ for k = 1:N
                  ,[x12{:}], [xl_12{:}], [xr_12{:}], [xlr_12{:}] ...
                  ,[xrr_12{:}], [xa_12{:}] ...
                  ,[xb_12{:}], [xc_12{:}],  [xd_12{:}]};
-    % controller = optimizer(constraints, objective,sdpsettings('verbose',1),[x{1};r],u{1});
+
     control_lat = optimizer(constraints, objective, sdpsettings('solver', 'gurobi'), parameters_in, solutions_out);
 
-    %% Building variables
+%% Building variables
 
-%define las condiciones iniciales que deben tener las variables
-%logicas
+
 
 %.....................vehiculo 1..........................
 
