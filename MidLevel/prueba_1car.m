@@ -26,26 +26,27 @@ Ts = 0.05; %delta time
 
 A = [0 1; -1 0];
 
-C = [0 1];
+C = [1 0; 0 1];
 
 Al = [0.9988 0.05; -0.05 0.9988];
+% Al = [1 0; 0 1];
 A1 = Al;
 A2 = Al;
 A3 = Al;
 A4 = Al;
 
-B_l = [0.16 0.08]';
+B_l = [1 0; 0 1];
 
-B1o = [0.1 0.05]';
+B1o = [1 0; 0 1];
 B1 = (g1+cx1)*B1o;
 
-B2o = [-0.08 -0.05]';
+B2o = [1 0; 0 1];
 B2 = (cx2 + cx21)*B2o;
 
-B3o = [-0.19 -0.1]';
+B3o = [1 0; 0 1];
 B3 = cx3*B3o;
 
-B4o = [0.13 0.08]';
+B4o = [1 0; 0 1];
 B4 = cx4*B4o;
 
 C1 = C;
@@ -58,50 +59,24 @@ md = 0.03;
 dmax = 3*md;
 dmin = -3*md;
 
-Ad = [1 -1]';
-bd = [dmax -dmin]';
+Ad = [1 0; -1 0; 0 1; 0 -1];
+bd = [dmax -dmin dmax -dmin]';
 
 % Energy
-umax = 1;
-umin = -1;
+umax = 5;
+umin = -5;
 
 % Constraints
 A_err = [1 0; -1 0; 0 1; 0 -1];
 b_err = [100 100 100 100]';
 
-Au = [1 -1]';
-bu = [umax -umin]';
+Au = [1 0; -1 0; 0 1; 0 -1];
+bu = [umax -umin umax -umin]';
+
+
+
 
 %% MPC Tuning
-%--------------------------------------------------------------------------
-% MPC tunning
-%--------------------------------------------------------------------------
-%..........................................................................
-% Backward finite horizon
-%..........................................................................
-
-L = 40;%Horizonte del MHE
-T = 40;%horizonte del mpc
-%..........................................................................
-% MHE weights
-%..........................................................................
-
-W = 1000;
-Wd = 100;
-
-%..........................................................................
-% MPC Weights
-%..........................................................................
-
-Q = [10 0; 0 10];
-R = 0.01;
-
-%--------------------------------------------------------------------------
-% QUADRATIC OPTIMIZATION PROBLEM
-%--------------------------------------------------------------------------
-%..........................................................................
-% Formulation
-%..........................................................................
 
 % States number
 nx = size(A1,2);
@@ -117,138 +92,65 @@ nc3 = size( C3, 1 );
 nc2 = size( C2, 1 );
 nc4 = size( C4, 1 );
 
-%% Costruction 
+%--------------------------------------------------------------------------
+% MPC tunning
+%--------------------------------------------------------------------------
 %..........................................................................
-% Construción Gxc, Guc
-%..........................................................................
-
-Gxc1 = zeros( nc1*(L+1), nx);
-Guc1 = zeros( nc1*(L+1), nu*L);
-Ggc1 = zeros( nc1*(L+1), nx);
-
-Gxc2 = zeros( nc2*(L+1), nx);
-Guc2 = zeros( nc2*(L+1), nu*L);
-Ggc2 = zeros( nc2*(L+1), nx);
-
-Gxc3 = zeros( nc3*(L+1), nx);
-Guc3 = zeros( nc3*(L+1), nu*L);
-Ggc3 = zeros( nc3*(L+1), nx);
-
-Gxc4 = zeros( nc4*(L+1), nx);
-Guc4 = zeros( nc4*(L+1), nu*L);
-Ggc4 = zeros( nc4*(L+1), nx);
-
-Gxc1( 1:nc1, :) = C1;
-Gxc2( 1:nc2, :) = C2;
-Gxc3( 1:nc3, :) = C3;
-Gxc4( 1:nc4, :) = C4;
-
-var11 = C1;
-var21 = C2;
-var31 = C3;
-var41 = C4;
-
-for i = 2:L+1
-    
-    var12 = var11;
-    var22 = var21;
-    var32 = var31;
-    var42 = var41;
-    
-    var11 = var11*A1;
-    var21 = var21*A2;
-    var31 = var31*A3;
-    var41 = var41*A4;
-   
-%     Gxc = Ae equation 15
-    Gxc1( nc1*(i-1)+1:nc1*i , : ) = var11;
-    Gxc2( nc2*(i-1)+1:nc2*i , : ) = var21;
-    Gxc3( nc3*(i-1)+1:nc3*i , : ) = var31;
-    Gxc4( nc4*(i-1)+1:nc4*i , : ) = var41;
-    
-    for j = 1:L-i+2
-%         Guc = Be
-        Guc1( nc1*(j+i-2)+1:nc1*(j+i-1) , nu*(j-1)+1:nu*j ) = (var11/A1)*B1;
-        Guc2( nc2*(j+i-2)+1:nc2*(j+i-1) , nu*(j-1)+1:nu*j ) = (var21/A2)*B2;
-        Guc3( nc3*(j+i-2)+1:nc3*(j+i-1) , nu*(j-1)+1:nu*j ) = (var31/A3)*B3;
-        Guc4( nc4*(j+i-2)+1:nc4*(j+i-1) , nu*(j-1)+1:nu*j ) = (var41/A4)*B4;
-%        
-%       Ggc = Pe
-        Ggc1( nc1*(j+i-2)+1:nc1*(j+i-1) , nx*(j-1)+1:nx*j ) = var12;
-        Ggc2( nc2*(j+i-2)+1:nc2*(j+i-1) , nx*(j-1)+1:nx*j ) = var22;
-        Ggc3( nc3*(j+i-2)+1:nc3*(j+i-1) , nx*(j-1)+1:nx*j ) = var32;
-        Ggc4( nc4*(j+i-2)+1:nc4*(j+i-1) , nx*(j-1)+1:nx*j ) = var42;        
-    end
-end
-
-Guc1 = -Guc1;
-Guc2 = -Guc2;
-Guc3 = -Guc3;
-Guc4 = -Guc4;
-
-clear var11 var12 var21 var22 var31 var32 var41 var42
-%
-%..........................................................................
-% Gx, Gu, Gw construction
+% Backward finite horizon
 %..........................................................................
 
-Gx = zeros( nx*T, nx);
-Gu = zeros( nx*T, nu*T);
-Gg = zeros( nx*T, nx*T);
+L = 40;%Horizonte del MHE
+T = 40;%horizonte del mpc
+%..........................................................................
+% MHE weights
+%..........................................................................
 
-Gu2 = zeros( nx*T, nu*T);
-Gu3 = zeros( nx*T, nu*T);
-Gu4 = zeros( nx*T, nu*T);
+W = 1000*eye(nu);
+Wd = 100;
 
-var = eye(nx);
+%..........................................................................
+% MPC Weights
+%..........................................................................
 
-var31 = eye(nx);
-var21 = eye(nx);
-var3 = eye(nx);
-var41 = eye(nx);
-% equation 8
+Q = 10*eye(nx);
+R = 0.1*eye(nu);
+
+%--------------------------------------------------------------------------
+% QUADRATIC OPTIMIZATION PROBLEM
+%--------------------------------------------------------------------------
+%..........................................................................
+% Formulation
+%..........................................................................
+
+
+
+
+
+%%  Construction A_, B_, P_
+%  Equation (8)
+A_ = zeros( nx*T, nx); %Gx
+
+B_1 = zeros( nx*T, nu*T); %Gu
+B_2 = zeros( nx*T, nu*T); %Gu
+B_3 = zeros( nx*T, nu*T); %Gu
+B_4 = zeros( nx*T, nu*T); %Gu
+
+P_ = zeros( nx*T, nx*T); %Gg
 for i = 1:T
-    
-    var2 = var*B1;
-    var32 = var31*B3;
-    var22 = var21*B2;
-    var42 = var41*B4;
-    
-    
+    A_( nx*(i-1)+1:nx*i  ,:) = A1^i;
     for j = 1:T-i+1
-        %Gu = B
-        Gu( nx*(j+i-2)+1:nx*(j+i-1) , nu*(j-1)+1:nu*j ) = var2;
-        Gu3( nx*(j+i-2)+1:nx*(j+i-1) , nu*(j-1)+1:nu*j ) = var32;
-        Gu2( nx*(j+i-2)+1:nx*(j+i-1) , nu*(j-1)+1:nu*j ) = var22;
-        Gu4( nx*(j+i-2)+1:nx*(j+i-1) , nu*(j-1)+1:nu*j ) = var42;
-
-        Gg( nx*(j+i-2)+1:nx*(j+i-1) , nx*(j-1)+1:nx*j ) = var3;
+        B_1( nx*(j+i-2)+1:nx*(j+i-1) , nu*(j-1)+1:nu*j ) = -(A1^(i-1))*B1;
+        B_2( nx*(j+i-2)+1:nx*(j+i-1) , nu*(j-1)+1:nu*j ) = -(A2^(i-1))*B2;
+        B_3( nx*(j+i-2)+1:nx*(j+i-1) , nu*(j-1)+1:nu*j ) = -(A3^(i-1))*B3;
+        B_4( nx*(j+i-2)+1:nx*(j+i-1) , nu*(j-1)+1:nu*j ) = -(A4^(i-1))*B4;
+        
+        P_( nx*(j+i-2)+1:nx*(j+i-1) , nx*(j-1)+1:nx*j ) = (A1^(i-1));
     end
-    
-    var = var*A1;
-    var3 = var3*A1;
-    var31 = var31*A3;
-    var21 = var21*A2;
-    var41 = var41*A4;
-%     Gx = A
-    Gx( nx*(i-1)+1:nx*i  ,:) = var;
+        
 end
 
-Gu = -Gu;
-Gw = Gu;
-Gu3 = -Gu3;
-Gu2 = -Gu2;
-Gu4 = -Gu4;
-clear var var2
-
-
-%..........................................................................
-% W_hat construction
-%..........................................................................
-
-W_hat = kron(eye(L+1),W);
-
-Wd_hat = kron( eye(L) , Wd );
+%% MPC
+% equation 11
 
 %..........................................................................
 % Q_hat, R_hat construction
@@ -258,52 +160,94 @@ Q_hat = kron( eye(T), Q );
 
 R_hat = kron( eye(T), R );
 
+
+H = B_1'*Q_hat*B_1 + R_hat;
+H = ( H+H' )/2;
+
+H2 = B_2'*Q_hat*B_2 + R_hat;
+H2 = ( H2+H2' )/2;
+
+H3 = B_3'*Q_hat*B_3 + R_hat;
+H3 = ( H3+H3' )/2;
+
+H4 = B_4'*Q_hat*B_4 + R_hat;
+H4 = ( H4+H4' )/2;
+
+
+%% Costruction A_e, B_e, P_e
+% Equation (15)
+Ae_1 = zeros( nc1*(L+1), nx); %Gxc1
+Ae_2 = zeros( nc1*(L+1), nx); %Gxc2
+Ae_3 = zeros( nc1*(L+1), nx); %Gxc3
+Ae_4 = zeros( nc1*(L+1), nx); %Gxc4
+
+Be_1 = zeros( nc1*(L+1), nu*L); %Guc1
+Be_2 = zeros( nc1*(L+1), nu*L); %Guc2
+Be_3 = zeros( nc1*(L+1), nu*L); %Guc3
+Be_4 = zeros( nc1*(L+1), nu*L); %Guc4
+
+Pe_1 = zeros( nc1*(L+1), nx); %Ggc1
+Pe_2 = zeros( nc1*(L+1), nx); %Ggc2
+Pe_3 = zeros( nc1*(L+1), nx); %Ggc3
+Pe_4 = zeros( nc1*(L+1), nx); %Ggc4
+
+Ae_1( 1:nc1, :) = C1;
+for i = 2:L+1
+    Ae_1( nc1*(i-1)+1:nc1*i , : ) = C1*(A1^(i-1));
+    Ae_2( nc1*(i-1)+1:nc1*i , : ) = C2*(A2^(i-1));
+    Ae_3( nc1*(i-1)+1:nc1*i , : ) = C3*(A3^(i-1));
+    Ae_4( nc1*(i-1)+1:nc1*i , : ) = C4*(A4^(i-1));
+    for j = 1:L-i+2
+        Be_1( nc1*(j+i-2)+1:nc1*(j+i-1) , nu*(j-1)+1:nu*j ) = -(C1*(A1^(i-2)))*B1;
+        Be_2( nc1*(j+i-2)+1:nc1*(j+i-1) , nu*(j-1)+1:nu*j ) = -(C2*(A2^(i-2)))*B2;
+        Be_3( nc1*(j+i-2)+1:nc1*(j+i-1) , nu*(j-1)+1:nu*j ) = -(C3*(A3^(i-2)))*B3;
+        Be_4( nc1*(j+i-2)+1:nc1*(j+i-1) , nu*(j-1)+1:nu*j ) = -(C4*(A4^(i-2)))*B4;
+        
+        Pe_1( nc1*(j+i-2)+1:nc1*(j+i-1) , nx*(j-1)+1:nx*j ) = (C1*(A1^(i-2))); 
+        Pe_2( nc1*(j+i-2)+1:nc1*(j+i-1) , nx*(j-1)+1:nx*j ) = (C2*(A2^(i-2))); 
+        Pe_3( nc1*(j+i-2)+1:nc1*(j+i-1) , nx*(j-1)+1:nx*j ) = (C3*(A3^(i-2))); 
+        Pe_4( nc1*(j+i-2)+1:nc1*(j+i-1) , nx*(j-1)+1:nx*j ) = (C4*(A4^(i-2))); 
+    end
+end
+
+
+
+%%  MHE
+% equation 18
+
 %..........................................................................
-% Hm construction
+% W_hat construction
 %..........................................................................
 
-% MHE
-% equation 18
-Hm1 = [Gxc1'*W_hat*Gxc1  Gxc1'*W_hat*Guc1;
-      Guc1'*W_hat*Gxc1  Guc1'*W_hat*Guc1+Wd_hat];
+W_hat = kron(eye((L+1)),W);
+
+Wd_hat = kron( eye(size(Be_2,2)) , Wd );
+
+
+Hm1 = [Ae_1'*W_hat*Ae_1  Ae_1'*W_hat*Be_1;
+      Be_1'*W_hat*Ae_1  Be_1'*W_hat*Be_1+Wd_hat];
   
 Hm1 =( Hm1+Hm1')/2;
 
 
-Hm2 = [Gxc2'*W_hat*Gxc2 Gxc2'*W_hat*Guc2;
-      Guc2'*W_hat*Gxc2 Guc2'*W_hat*Guc2+Wd_hat];
+Hm2 = [Ae_2'*W_hat*Ae_2 Ae_2'*W_hat*Be_2;
+      Be_2'*W_hat*Ae_2 Be_2'*W_hat*Be_2+Wd_hat];
   
 Hm2 =( Hm2+Hm2')/2;
 
 
-Hm3 = [Gxc3'*W_hat*Gxc3 Gxc3'*W_hat*Guc3;
-      Guc3'*W_hat*Gxc3 Guc3'*W_hat*Guc3+Wd_hat];
+Hm3 = [Ae_3'*W_hat*Ae_3 Ae_3'*W_hat*Be_3;
+      Be_3'*W_hat*Ae_3 Be_3'*W_hat*Be_3+Wd_hat];
   
 Hm3 =( Hm3+Hm3')/2;
 
-Hm4 = [Gxc4'*W_hat*Gxc4 Gxc4'*W_hat*Guc4;
-      Guc4'*W_hat*Gxc4 Guc4'*W_hat*Guc4+Wd_hat];
+Hm4 = [Ae_4'*W_hat*Ae_4 Ae_4'*W_hat*Be_4;
+      Be_4'*W_hat*Ae_4 Be_4'*W_hat*Be_4+Wd_hat];
   
 Hm4 =( Hm4+Hm4')/2;
 
 %..........................................................................
-% H construction
-%..........................................................................
-% equation 11
-H = Gu'*Q_hat*Gu + R_hat;
-H = ( H+H' )/2;
-
-H2 = Gu2'*Q_hat*Gu2 + R_hat;
-H2 = ( H2+H2' )/2;
-
-H3 = Gu3'*Q_hat*Gu3 + R_hat;
-H3 = ( H3+H3' )/2;
-
-H4 = Gu4'*Q_hat*Gu4 + R_hat;
-H4 = ( H4+H4' )/2;
-
-%..........................................................................
-% Constrains Augmented System
+%% Constrains Augmented System
 %..........................................................................
 
 % MPC
@@ -335,7 +279,7 @@ bU_m = [be_hat_m; bd_hat_m];
 
 
 %--------------------------------------------------------------------------
-% SIMULATION
+%% Initial Conditions
 %--------------------------------------------------------------------------
 %..........................................................................
 % Parameters
@@ -368,7 +312,7 @@ t = 0:Ts:tf;
 t = t';
 
 %..........................................................................
-% History vectors
+%% History vectors
 %..........................................................................
 
 % Real States
@@ -405,15 +349,16 @@ E4( 1 , : ) = e4;
 
 % Output
 Y1 = zeros( length(t), nc1);
+% Y1 = zeros( nc1*length(t), 1);
 Y1( 1, :) = C1*e;
 
-Y2 = zeros( length(t), nc2);
+Y2 = zeros( length(t), nc1);
 Y2( 1, :) = C2*e2;
 
-Y3 = zeros( length(t), nc3);
+Y3 = zeros( length(t), nc1);
 Y3( 1, :) = C3*e3;
 
-Y4 = zeros( length(t), nc4);
+Y4 = zeros( length(t), nc1);
 Y4( 1, :) = C4*e4;
 
 % Control Signal
@@ -430,24 +375,24 @@ U_leader = zeros( length(t) , nu );
 % Disturbances
 
 D1 = zeros( length(t) , nd );
-D1e = D1;
+% D1e = D1;
 
 D2 = zeros( length(t) , nd );
-D2e = D2;
+% D2e = D2;
 
 D3 = zeros( length(t) , nd );
-D3e = D3;
+% D3e = D3;
 
 D4 = zeros( length(t) , nd );
-D4e = D4;
+% D4e = D4;
 %..........................................................................
-% System start
+%% System start
 %..........................................................................
 
 % Magnitud del ruido
 %  Revisar la función con la que se esta generando el ruido
 % Control Signal Leader
-u_leader = @(k) 0.2 * sin((2 * pi/ 200)*k);
+% u_leader = @(k) 0.2 * sin((2 * pi/ 200)*k)*ones(nu,1);
 
 for i = 1:L
     
@@ -456,22 +401,22 @@ for i = 1:L
     X ( i+1, : ) = x;
     U_leader(i, :) = u_leader(i);    
     
-    di = md*randn(1,1);
+    di = md*randn(nu,1);
     x1 = A1*x1 + B1o*di;
     X1 ( i+1, : ) = x1;
     D1( i, : ) = di;
     
-    di = md*randn(1,1);
+    di = md*randn(nu,1);
     x2 = A2*x2 + B2o*di;
     X2 ( i+1, : ) = x2;
     D2( i, : ) = di;
     
-    di = md*randn(1,1);
+    di = md*randn(nu,1);
     x3 = A3*x3 + B3o*di;
     X3 ( i+1, : ) = x3;
     D3( i, : ) = di;
     
-    di = md*randn(1,1);
+    di = md*randn(nu,1);
     x4 = A4*x4 + B4o*di;
     X4 ( i+1, : ) = x4;
     D4( i, : ) = di;
@@ -491,9 +436,9 @@ for i = 1:L
     Y3( i+1, : ) = C3*e3;
     Y4( i+1, : ) = C4*e4;
 end
-plot(E3(1:L),1:L)
+% plot(X1(1:L),1:L)
 
-
+%%
 %--------------------------------------------------------------------------
 % OPTIMIZATION
 %--------------------------------------------------------------------------
@@ -555,26 +500,26 @@ nloop = 0;
 
 
 %--------------------------------------------------------------------------
-% SIMULATION LOOP
+%% SIMULATION LOOP
 %--------------------------------------------------------------------------
 
 tic
 for i = L+1:length(t)
+ 
+    up1  = reshape(U( i-L:i-1, : )', [L*nu, 1]);
+    y1 = reshape(Y1(i-L:i, :)', [(L+1)*nu, 1]);
     
-    up1  = U( i-L:i-1, : );
-    y1 = Y1( i-L:i, :);
-    
-    up2  = U2( i-L:i-1, : );
-    y2 = Y2( i-L:i, :);
+    up2  = reshape(U2( i-L:i-1, : )', [L*nu, 1]);
+    y2 = reshape(Y2(i-L:i, :)', [(L+1)*nu, 1]);
     
     
-    up3  = U3( i-L:i-1, : );
-    y3 = Y3( i-L:i, :);
+    up3  = reshape(U3( i-L:i-1, : )', [L*nu, 1]);
+    y3 = reshape(Y3(i-L:i, :)', [(L+1)*nu, 1]);
     
-    up4  = U4( i-L:i-1, : );
-    y4 = Y4( i-L:i, :);
+    up4  = reshape(U4( i-L:i-1, : )', [L*nu, 1]);
+    y4 = reshape(Y4(i-L:i, :)', [(L+1)*nu, 1]);
     
-    up0 = U_leader( i-L:i-1, : );
+    up0 = reshape(U_leader( i-L:i-1, : )', [L*nu, 1]);
     
     % control signal k-1
     uam = -1e6*ones( size(um,1) + size(u3m,1) + size(u2m,1) + size(u4m,1), 1);
@@ -587,23 +532,23 @@ for i = L+1:length(t)
         iter2 = iter2 +1;
         
         gammam = g1*kron( eye(L), B_l)*(up0);
-        gamma2m = cx2*kron( eye(L), B3o )*(up3 + u3m(nx+1:end , :)) + ...
-                  cx21*kron( eye(L), B1o )*(up1 + um(nx+1:end , :));
-        gamma3m = cx3*kron( eye(L), B1o )*(up1 + um(nx+1:end , :));
-        gamma4m = cx4*kron( eye(L), B2o )*(up2 + u2m(nx+1:end , :));
+        gamma2m = cx2*kron( eye(L), B3o )*(up3 + u3m(end-nu*L+1:end , :)) + ...
+                  cx21*kron( eye(L), B1o )*(up1 + um(end-nu*L+1:end , :));
+        gamma3m = cx3*kron( eye(L), B1o )*(up1 + um(end-nu*L+1:end , :));
+        gamma4m = cx4*kron( eye(L), B2o )*(up2 + u2m(end-nu*L+1:end , :));
         
         
-        Fm1 = [up1'*Guc1'*W_hat*Gxc1 + gammam'*Ggc1'*W_hat*Gxc1 - y1'*W_hat*Gxc1  ...
-            up1'*Guc1'*W_hat*Guc1+gammam'*Ggc1'*W_hat*Guc1-y1'*W_hat*Guc1];
+        Fm1 = [up1'*Be_1'*W_hat*Ae_1 + gammam'*Pe_1'*W_hat*Ae_1 - y1'*W_hat*Ae_1  ...
+            up1'*Be_1'*W_hat*Be_1 + gammam'*Pe_1'*W_hat*Be_1 - y1'*W_hat*Be_1];
         
-        Fm2 = [up2'*Guc2'*W_hat*Gxc2+gamma2m'*Ggc2'*W_hat*Gxc2-y2'*W_hat*Gxc2  ...
-            up2'*Guc2'*W_hat*Guc2+gamma2m'*Ggc2'*W_hat*Guc2-y2'*W_hat*Guc2];
+        Fm2 = [up2'*Be_2'*W_hat*Ae_2+gamma2m'*Pe_2'*W_hat*Ae_2-y2'*W_hat*Ae_2  ...
+            up2'*Be_2'*W_hat*Be_2+gamma2m'*Pe_2'*W_hat*Be_2-y2'*W_hat*Be_2];
         
-        Fm3 = [up3'*Guc3'*W_hat*Gxc3+gamma3m'*Ggc3'*W_hat*Gxc3-y3'*W_hat*Gxc3  ...
-            up3'*Guc3'*W_hat*Guc3+gamma3m'*Ggc3'*W_hat*Guc3-y3'*W_hat*Guc3];   
+        Fm3 = [up3'*Be_3'*W_hat*Ae_3+gamma3m'*Pe_3'*W_hat*Ae_3-y3'*W_hat*Ae_3  ...
+            up3'*Be_3'*W_hat*Be_3+gamma3m'*Pe_3'*W_hat*Be_3-y3'*W_hat*Be_3];   
         
-        Fm4 = [up4'*Guc4'*W_hat*Gxc4+gamma4m'*Ggc4'*W_hat*Gxc4-y4'*W_hat*Gxc4  ...
-            up4'*Guc4'*W_hat*Guc4+gamma4m'*Ggc4'*W_hat*Guc4-y4'*W_hat*Guc4];   
+        Fm4 = [up4'*Be_4'*W_hat*Ae_4+gamma4m'*Pe_4'*W_hat*Ae_4-y4'*W_hat*Ae_4  ...
+            up4'*Be_4'*W_hat*Be_4+gamma4m'*Pe_4'*W_hat*Be_4-y4'*W_hat*Be_4];   
         
         
         
@@ -648,12 +593,13 @@ for i = L+1:length(t)
     out4 = u4m( 1:nx, :);
     
     for j=1:L
-        out = A1*out - B1*(up1(j) + um(nx+j,:)) + g1*B_l * up0(j);
-        out3 = A3*out3 - B3*(up3(j) + u3m(nx+j,:)) + cx3*B1o*(up1(j) + um(nx+j,:));
-        out2 = A2*out2 - B2*(up2(j) + u2m(nx+j,:)) + cx2*B3o*(up3(j) + u3m(nx+j,:)) ...
-                                                   + cx21*B1o*(up1(j) + um(nx+j,:));
-
-        out4 = A4*out4 - B4*(up4(j) + u4m(nx+j,:)) + cx4*B2o*(up2(j) + u2m(nx+j,:));
+        ind = nu*(j-1)+1:nu*j;%index of up_
+        ind2 = nx+nu*(j-1)+1:nx+nu*j; %index of um_
+        out = A1*out - B1*(up1(ind,:) + um(ind2,:)) + g1*B_l * up0(ind,:);
+        out3 = A3*out3 - B3*(up3(ind,:) + u3m(ind2,:)) + cx3*B1o*(up1(ind,:) + um(ind2,:));
+        out2 = A2*out2 - B2*(up2(ind,:) + u2m(ind2,:)) + cx2*B3o*(up3(ind,:) + u3m(ind2,:)) ...
+                                                   + cx21*B1o*(up1(ind,:) + um(ind2,:));
+        out4 = A4*out4 - B4*(up4(ind) + u4m(ind2,:)) + cx4*B2o*(up2(ind,:) + u2m(ind2,:));
     end
     
     Ee1(i,:) = out;
@@ -693,48 +639,40 @@ for i = L+1:length(t)
     while norm([u;u2;u3;u4] - ua) > 1e-3 && iter <= 10000
         
         ua = [u;u2;u3;u4];
-%         gamma = pi
-%         Gg = P
-        gamma = g1*kron( eye(T), B_l)*(u_leader(i+1:i+T)');
+%       gamma = pi
+%       Gg = P
+        gamma = g1*kron( eye(T), B_l)*(u_leader(i+1:i+T));
         gamma3 = cx3*kron( eye(T), B1o )*(u+dd1);
         gamma2 = cx2*kron( eye(T), B3o )*(u3+dd3) + cx21*kron( eye(T), B1o )*(u+dd1);
         gamma4 = cx4*kron( eye(T), B2o )*(u2+dd2);
         
-%         equation 11
-        F = e'*Gx'*Q_hat*Gu + gamma'*Gg'*Q_hat*Gu + dd1'*Gu'*Q_hat*Gu;
-        F3 = e3'*Gx'*Q_hat*Gu3 + gamma3'*Gg'*Q_hat*Gu3 + dd3'*Gu3'*Q_hat*Gu3;
-        F2 = e2'*Gx'*Q_hat*Gu2 + gamma2'*Gg'*Q_hat*Gu2 + dd2'*Gu2'*Q_hat*Gu2;
-        F4 = e4'*Gx'*Q_hat*Gu4 + gamma4'*Gg'*Q_hat*Gu4 + dd4'*Gu4'*Q_hat*Gu4;
+%       Equation 11
+        F1 = e'*A_'*Q_hat*B_1 + gamma'*P_'*Q_hat*B_1 + dd1'*B_1'*Q_hat*B_1;
+        F3 = e3'*A_'*Q_hat*B_3 + gamma3'*P_'*Q_hat*B_3 + dd3'*B_3'*Q_hat*B_3;
+        F2 = e2'*A_'*Q_hat*B_2 + gamma2'*P_'*Q_hat*B_2 + dd2'*B_2'*Q_hat*B_2;
+        F4 = e4'*A_'*Q_hat*B_4 + gamma4'*P_'*Q_hat*B_4 + dd4'*B_4'*Q_hat*B_4;
         
-%         PROCESO DE OPTIMIZACION ADMM
-        u = ( H + theta*( AA'*AA ) )  \ ( AA'*( theta*s + Lambda ) - F' );
-        
+%       PROCESO DE OPTIMIZACION ADMM
+        u = ( H + theta*( AA'*AA ) )  \ ( AA'*( theta*s + Lambda ) - F1' );
         s = min( AA*u - ( 1/theta )*Lambda , bU );
-        
         Lambda = Lambda + theta*(-AA*u + s);%
         
         
         
         u2 = ( H2 + theta*( AA'*AA ) )  \ ( AA'*( theta*s2 + Lambda2 ) - F2' );
-        
         s2 = min( AA*u2 - ( 1/theta )*Lambda2 , bU );
-        
         Lambda2 = Lambda2 + theta*(-AA*u2 + s2);  
         
         
         
         u3 = ( H3 + theta*( AA'*AA ) )  \ ( AA'*( theta*s3 + Lambda3 ) - F3' );
-        
         s3 = min( AA*u3 - ( 1/theta )*Lambda3 , bU );
-        
         Lambda3 = Lambda3 + theta*(-AA*u3 + s3);
         
         
         
         u4 = ( H4 + theta*( AA'*AA ) )  \ ( AA'*( theta*s4 + Lambda4 ) - F4' );
-        
         s4 = min( AA*u4 - ( 1/theta )*Lambda4 , bU );
-        
         Lambda4 = Lambda4 + theta*(-AA*u4 + s4);
         
         
@@ -755,51 +693,47 @@ for i = L+1:length(t)
     U_leader( i, :) = u_leader(i);
     
     % System agent 1
-    di = md*randn(1,1);
+    di = md*randn(nu,1);
     D1( i, : ) = di;
-    x1 = A1*x1 + B1o*(u(1,1) + di);
+    x1 = A1*x1 + B1o*(u(1:nu,1) + di);
     
     % State agent 1
     X1( i+1 , : ) = x1;
     
     
-    
-    
     % System agent 2
-    di = md*randn(1,1);
+    di = md*randn(nu,1);
     D2( i, : ) = di;
-    x2 = A2*x2 + B2o*(u2(1,1) + di);
-    
+    x2 = A2*x2 + B2o*(u2(1:nu,1) + di);
     % State agent 2
     X2( i+1 , : ) = x2;
     
     
-  
-    
     % System agent 3
-    di = md*randn(1,1);
+    di = md*randn(nu,1);
     D3( i, : ) = di;
     x3 = A3*x3 + B3o*(u3(1,1) + di);
-    
     % State agent 3
     X3( i+1 , : ) = x3;
     
     
     
     
-     % System agent 3
-    di = md*randn(1,1);
+     % System agent 4
+    di = md*randn(nu,1);
     D4( i, : ) = di;
     x4 = A4*x4 + B4o*(u4(1,1) + di);
     
-    % State agent 3
+    % State agent 4
     X4( i+1 , : ) = x4;
+    
+    
     
     
     
 
     e = g1*(x - x1);
-    Y1(i+1) = C1*e;
+    Y1(i+1,:) = C1*e;
     E(i+1, :) = e;
     
     
@@ -828,15 +762,13 @@ for i = L+1:length(t)
     U3( i , :) = u3(1,1);
     U4( i , :) = u4(1,1);
     
-    nloop = nloop + 1;
+    nloop = nloop + 1
 end
 toc
 
 %--------------------------------------------------------------------------
-% k = 0:length(t);
-% k = k';
-
-k = 0:300;
+%% Ploting
+k = 0:500;
 k = k';
 
 %--------------------------------------------------------------------------
@@ -857,6 +789,7 @@ grid on
 grid minor
 set(gca,'FontSize', 15)
 ylabel('$x_1$', 'Interpreter', 'latex', 'FontSize', 20)
+title('X- position')
 
 
 subplot(2,1,2)
@@ -876,7 +809,7 @@ grid minor
 set(gca,'FontSize', 15)
 ylabel('$x_2$', 'Interpreter', 'latex', 'FontSize', 20)
 xlabel('$k$', 'Interpreter', 'latex', 'FontSize', 20)
-
+title('Y- Position')
 %--------------------------------------------------------------------------
 
 figure(3)
@@ -938,4 +871,4 @@ xlabel('$k$', 'Interpreter', 'latex', 'FontSize', 20)
 legend({'$u_0$','$u_1$', '$u_2$', '$u_3$', '$u_4$'}, 'Interpreter',...
         'latex', 'Orientation', 'horizontal','FontSize', 15)   
 
-
+ save('myFile2.mat')
