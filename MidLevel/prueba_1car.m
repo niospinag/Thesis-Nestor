@@ -6,10 +6,7 @@ clear
 % SYSTEM
 %--------------------------------------------------------------------------
 %..........................................................................
-% System constrains
-%..........................................................................
-% Adjacency Matrix
-M_A = [0 0; 0 1];
+% Edges
 
 g1 = 2;
 cx1 = 0;
@@ -17,24 +14,21 @@ cx2 = 0.2;
 cx3 = 1;
 cx21 = (1 - cx2);
 cx4 = 1;
-
-
+T=40;
+L = 40
 %..........................................................................
 %--------------------------------------------------------------------------
-% creando la ecuacion (5)
-Ts = 0.05; %delta time
-
-A = [0 1; -1 0];
-
-C = [1 0; 0 1];
-
+% borrar
 Al = [0.9988 0.05; -0.05 0.9988];
 % Al = [1 0; 0 1];
 A1 = Al;
 A2 = Al;
 A3 = Al;
 A4 = Al;
+% //////////////////////
 
+
+A = [0.9988 0.05; -0.05 0.9988];
 B_l = [1 0; 0 1];
 
 B1o = [1 0; 0 1];
@@ -49,29 +43,31 @@ B3 = cx3*B3o;
 B4o = [1 0; 0 1];
 B4 = cx4*B4o;
 
-C1 = C;
-C2 = C;
-C3 = C;
-C4 = C;
+C = [1 0; 0 1];
+
+Car = System("Car");
+
+Car.A = A;
+Car.C = C;
 
 % Disturbances
 md = 0.03;
 dmax = 3*md;
 dmin = -3*md;
 
-Ad = [1 0; -1 0; 0 1; 0 -1];
-bd = [dmax -dmin dmax -dmin]';
+Car.Ad = [1 0; -1 0; 0 1; 0 -1];
+Car.bd = [dmax -dmin dmax -dmin]';
 
 % Energy
 umax = 5;
 umin = -5;
 
 % Constraints
-A_err = [1 0; -1 0; 0 1; 0 -1];
-b_err = [100 100 100 100]';
+Car.A_err = [1 0; -1 0; 0 1; 0 -1];
+Car.b_err = [100 100 100 100]';
 
-Au = [1 0; -1 0; 0 1; 0 -1];
-bu = [umax -umin umax -umin]';
+Car.Au = [1 0; -1 0; 0 1; 0 -1];
+Car.bu = [umax -umin umax -umin]';
 
 
 
@@ -79,18 +75,20 @@ bu = [umax -umin umax -umin]';
 %% MPC Tuning
 
 % States number
-nx = size(A1,2);
+nx = size(A,2);
+Car.nx= nx;
+
 % Control signals number
 nu = size(B1,2);
+Car.nu = nu;
+
 % Disturbance number
 nd = size(B1,2);
+Car.nd = nd;
+
 % Output number
-nc = size(eye(2),1);
-% Output number
-nc1 = size( C1, 1 );
-nc3 = size( C3, 1 );
-nc2 = size( C2, 1 );
-nc4 = size( C4, 1 );
+nc = size( C, 1 );
+Car.nc = nc;
 
 %--------------------------------------------------------------------------
 % MPC tunning
@@ -99,21 +97,21 @@ nc4 = size( C4, 1 );
 % Backward finite horizon
 %..........................................................................
 
-L = 40;%Horizonte del MHE
-T = 40;%horizonte del mpc
+Car.L = L;%Horizonte del MHE
+Car.T = T;%horizonte del mpc
 %..........................................................................
 % MHE weights
 %..........................................................................
 
-W = 1000*eye(nu);
-Wd = 100;
+Car.W = 1000*eye(nu);
+Car.Wd = 100;
 
 %..........................................................................
 % MPC Weights
 %..........................................................................
 
-Q = 10*eye(nx);
-R = 0.1*eye(nu);
+Car.Q = 10*eye(nx);
+Car.R = 0.1*eye(nu);
 
 %--------------------------------------------------------------------------
 % QUADRATIC OPTIMIZATION PROBLEM
@@ -122,129 +120,37 @@ R = 0.1*eye(nu);
 % Formulation
 %..........................................................................
 
+Car1 = Car();
+Car2 = Car;
+Car3 = Car;
+Car4 = Car;
 
+Car1.B = B1;
+Car2.B = B2;
+Car3.B = B3;
+Car4.B = B4;
 
+Car1.Bo = B1o;
+Car2.Bo = B2o;
+Car3.Bo = B3o;
+Car4.Bo = B4o;
 
 
 %%  Construction A_, B_, P_
 %  Equation (8)
-A_ = zeros( nx*T, nx); %Gx
 
-B_1 = zeros( nx*T, nu*T); %Gu
-B_2 = zeros( nx*T, nu*T); %Gu
-B_3 = zeros( nx*T, nu*T); %Gu
-B_4 = zeros( nx*T, nu*T); %Gu
+[Car1,B_1] = Car1.MPC_Arrays();
+[Car2,B_2] = Car2.MPC_Arrays();
+[Car3,B_3] = Car3.MPC_Arrays();
+[Car4,B_4] = Car4.MPC_Arrays();
+A_ = Car1.A_;
+P_ = Car1.P_;
+H = Car1.H;
+[Car1, Ae_1, Be_1, Pe_1, Hm1] = Car1.MHE_Arrays();
+[Car2, Ae_2, Be_2, Pe_2, Hm2] = Car2.MHE_Arrays();
+[Car3, Ae_3, Be_3, Pe_3, Hm3] = Car3.MHE_Arrays();
+[Car4, Ae_4, Be_4, Pe_4, Hm4] = Car4.MHE_Arrays();
 
-P_ = zeros( nx*T, nx*T); %Gg
-for i = 1:T
-    A_( nx*(i-1)+1:nx*i  ,:) = A1^i;
-    for j = 1:T-i+1
-        B_1( nx*(j+i-2)+1:nx*(j+i-1) , nu*(j-1)+1:nu*j ) = -(A1^(i-1))*B1;
-        B_2( nx*(j+i-2)+1:nx*(j+i-1) , nu*(j-1)+1:nu*j ) = -(A2^(i-1))*B2;
-        B_3( nx*(j+i-2)+1:nx*(j+i-1) , nu*(j-1)+1:nu*j ) = -(A3^(i-1))*B3;
-        B_4( nx*(j+i-2)+1:nx*(j+i-1) , nu*(j-1)+1:nu*j ) = -(A4^(i-1))*B4;
-        
-        P_( nx*(j+i-2)+1:nx*(j+i-1) , nx*(j-1)+1:nx*j ) = (A1^(i-1));
-    end
-        
-end
-
-%% MPC
-% equation 11
-
-%..........................................................................
-% Q_hat, R_hat construction
-%..........................................................................
-
-Q_hat = kron( eye(T), Q );
-
-R_hat = kron( eye(T), R );
-
-
-H = B_1'*Q_hat*B_1 + R_hat;
-H = ( H+H' )/2;
-
-H2 = B_2'*Q_hat*B_2 + R_hat;
-H2 = ( H2+H2' )/2;
-
-H3 = B_3'*Q_hat*B_3 + R_hat;
-H3 = ( H3+H3' )/2;
-
-H4 = B_4'*Q_hat*B_4 + R_hat;
-H4 = ( H4+H4' )/2;
-
-
-%% Costruction A_e, B_e, P_e
-% Equation (15)
-Ae_1 = zeros( nc1*(L+1), nx); %Gxc1
-Ae_2 = zeros( nc1*(L+1), nx); %Gxc2
-Ae_3 = zeros( nc1*(L+1), nx); %Gxc3
-Ae_4 = zeros( nc1*(L+1), nx); %Gxc4
-
-Be_1 = zeros( nc1*(L+1), nu*L); %Guc1
-Be_2 = zeros( nc1*(L+1), nu*L); %Guc2
-Be_3 = zeros( nc1*(L+1), nu*L); %Guc3
-Be_4 = zeros( nc1*(L+1), nu*L); %Guc4
-
-Pe_1 = zeros( nc1*(L+1), nx); %Ggc1
-Pe_2 = zeros( nc1*(L+1), nx); %Ggc2
-Pe_3 = zeros( nc1*(L+1), nx); %Ggc3
-Pe_4 = zeros( nc1*(L+1), nx); %Ggc4
-
-Ae_1( 1:nc1, :) = C1;
-for i = 2:L+1
-    Ae_1( nc1*(i-1)+1:nc1*i , : ) = C1*(A1^(i-1));
-    Ae_2( nc1*(i-1)+1:nc1*i , : ) = C2*(A2^(i-1));
-    Ae_3( nc1*(i-1)+1:nc1*i , : ) = C3*(A3^(i-1));
-    Ae_4( nc1*(i-1)+1:nc1*i , : ) = C4*(A4^(i-1));
-    for j = 1:L-i+2
-        Be_1( nc1*(j+i-2)+1:nc1*(j+i-1) , nu*(j-1)+1:nu*j ) = -(C1*(A1^(i-2)))*B1;
-        Be_2( nc1*(j+i-2)+1:nc1*(j+i-1) , nu*(j-1)+1:nu*j ) = -(C2*(A2^(i-2)))*B2;
-        Be_3( nc1*(j+i-2)+1:nc1*(j+i-1) , nu*(j-1)+1:nu*j ) = -(C3*(A3^(i-2)))*B3;
-        Be_4( nc1*(j+i-2)+1:nc1*(j+i-1) , nu*(j-1)+1:nu*j ) = -(C4*(A4^(i-2)))*B4;
-        
-        Pe_1( nc1*(j+i-2)+1:nc1*(j+i-1) , nx*(j-1)+1:nx*j ) = (C1*(A1^(i-2))); 
-        Pe_2( nc1*(j+i-2)+1:nc1*(j+i-1) , nx*(j-1)+1:nx*j ) = (C2*(A2^(i-2))); 
-        Pe_3( nc1*(j+i-2)+1:nc1*(j+i-1) , nx*(j-1)+1:nx*j ) = (C3*(A3^(i-2))); 
-        Pe_4( nc1*(j+i-2)+1:nc1*(j+i-1) , nx*(j-1)+1:nx*j ) = (C4*(A4^(i-2))); 
-    end
-end
-
-
-
-%%  MHE
-% equation 18
-
-%..........................................................................
-% W_hat construction
-%..........................................................................
-
-W_hat = kron(eye((L+1)),W);
-
-Wd_hat = kron( eye(size(Be_2,2)) , Wd );
-
-
-Hm1 = [Ae_1'*W_hat*Ae_1  Ae_1'*W_hat*Be_1;
-      Be_1'*W_hat*Ae_1  Be_1'*W_hat*Be_1+Wd_hat];
-  
-Hm1 =( Hm1+Hm1')/2;
-
-
-Hm2 = [Ae_2'*W_hat*Ae_2 Ae_2'*W_hat*Be_2;
-      Be_2'*W_hat*Ae_2 Be_2'*W_hat*Be_2+Wd_hat];
-  
-Hm2 =( Hm2+Hm2')/2;
-
-
-Hm3 = [Ae_3'*W_hat*Ae_3 Ae_3'*W_hat*Be_3;
-      Be_3'*W_hat*Ae_3 Be_3'*W_hat*Be_3+Wd_hat];
-  
-Hm3 =( Hm3+Hm3')/2;
-
-Hm4 = [Ae_4'*W_hat*Ae_4 Ae_4'*W_hat*Be_4;
-      Be_4'*W_hat*Ae_4 Be_4'*W_hat*Be_4+Wd_hat];
-  
-Hm4 =( Hm4+Hm4')/2;
 
 %..........................................................................
 %% Constrains Augmented System
@@ -252,30 +158,12 @@ Hm4 =( Hm4+Hm4')/2;
 
 % MPC
 
-Au_hat = kron( eye(T), Au );
-bu_hat = kron( ones(T,1), bu );
-
-AU = Au_hat;
-
-AA = AU;
-
-% MHE
-
-Ae_hat_m = kron( eye(1), A_err );
-be_hat_m = kron( ones(1,1), b_err );
-
-Ad_hat_m = kron( eye(L), Ad );
-bd_hat_m = kron( ones(L,1), bd );
-
-AA_m = [Ae_hat_m zeros( size( Ae_hat_m , 1 ) , size( Ad_hat_m , 2 ) );
-      zeros( size( Ad_hat_m , 1) , size( Ae_hat_m , 2 ) ) Ad_hat_m];
-  
-bU_m = [be_hat_m; bd_hat_m];
-%
-
-%..........................................................................
-%--------------------------------------------------------------------------
-
+Car1 = Car1.Const_Augment();
+Car2 = Car2.Const_Augment();
+Car3 = Car3.Const_Augment();
+Car4 = Car4.Const_Augment();
+AA_m = Car1.AA_m;
+bU_m = Car1.bU_m;
 
 
 %--------------------------------------------------------------------------
@@ -296,7 +184,7 @@ x2 = [3*randn(1,1) 0.5*randn(1,1)]';
 
 x4 = [3*randn(1,1) 0.5*randn(1,1)]';
 
-e = g1*( x - x1 );
+e1 = g1*( x - x1 );
 
 e3 = cx3*(x1 - x3);
 
@@ -306,7 +194,7 @@ e4 = cx4*(x2 - x4);
 
 % Final time
 tf = 25;
-
+Ts = Car1.Ts;
 % Time vector
 t = 0:Ts:tf;
 t = t';
@@ -315,76 +203,14 @@ t = t';
 %% History vectors
 %..........................................................................
 
-% Real States
-X = zeros( length(t)+1 , nx );
-X( 1 , : ) = x;
+Car1 = History_Vectors(Car1,x1, e1, t);
+Car2 = History_Vectors(Car2,x2, e2, t);
+Car3 = History_Vectors(Car3,x3, e3, t);
+Car4 = History_Vectors(Car4,x4, e4, t);
 
-X1 = zeros( length(t)+1 , nx );
-X1( 1 , : ) = x1;
-
-X3 = zeros( length(t)+1 , nx );
-X3( 1 , : ) = x3;
-
-X2 = zeros( length(t)+1 , nx );
-X2( 1 , : ) = x2;
-
-X4 = zeros( length(t)+1 , nx );
-X4( 1 , : ) = x4;
-
-E = zeros( length(t)+1 , nx );
-Ee1 = E;
-E( 1 , : ) = e;
-
-E3 = zeros( length(t)+1 , nx );
-Ee3 = E3;
-E3( 1 , : ) = e3;
-% 
-E2 = zeros( length(t)+1 , nx );
-Ee2 = E2;
-E2( 1 , : ) = e2;
-
-E4 = zeros( length(t)+1 , nx );
-Ee4 = E4;
-E4( 1 , : ) = e4;
-
-% Output
-Y1 = zeros( length(t), nc1);
-% Y1 = zeros( nc1*length(t), 1);
-Y1( 1, :) = C1*e;
-
-Y2 = zeros( length(t), nc1);
-Y2( 1, :) = C2*e2;
-
-Y3 = zeros( length(t), nc1);
-Y3( 1, :) = C3*e3;
-
-Y4 = zeros( length(t), nc1);
-Y4( 1, :) = C4*e4;
-
-% Control Signal
-U = zeros( length(t) , nu );
-
-U3 = zeros( length(t) , nu );
-
-U2 = zeros( length(t) , nu );
-
-U4 = zeros( length(t) , nu );
 
 U_leader = zeros( length(t) , nu );
 
-% Disturbances
-
-D1 = zeros( length(t) , nd );
-% D1e = D1;
-
-D2 = zeros( length(t) , nd );
-% D2e = D2;
-
-D3 = zeros( length(t) , nd );
-% D3e = D3;
-
-D4 = zeros( length(t) , nd );
-% D4e = D4;
 %..........................................................................
 %% System start
 %..........................................................................
@@ -399,42 +225,44 @@ for i = 1:L
     
     x = Al*x + B_l*u_leader(i);    
     X ( i+1, : ) = x;
-    U_leader(i, :) = u_leader(i);    
+    U_leader(i, :) = u_leader(i); 
     
+%     agent1
     di = md*randn(nu,1);
-    x1 = A1*x1 + B1o*di;
-    X1 ( i+1, : ) = x1;
-    D1( i, : ) = di;
+    [~,x1]=Car1.make_step(x1,di, i);
+    Car1.D( i, : ) = di;
     
+    %     agent2
     di = md*randn(nu,1);
-    x2 = A2*x2 + B2o*di;
-    X2 ( i+1, : ) = x2;
-    D2( i, : ) = di;
+    [~,x2]=Car2.make_step(x2,di, i);
+    Car2.D( i, : ) = di;
     
+    %     agent3
     di = md*randn(nu,1);
-    x3 = A3*x3 + B3o*di;
-    X3 ( i+1, : ) = x3;
-    D3( i, : ) = di;
+    [~,x3]=Car3.make_step(x3,di, i);
+    Car3.D( i, : ) = di;
     
+    %     agent4
     di = md*randn(nu,1);
-    x4 = A4*x4 + B4o*di;
-    X4 ( i+1, : ) = x4;
-    D4( i, : ) = di;
+    [~,x1]4]=Car4.make_step(x4,di, i);
+    Car4.D( i, : ) = di;
 %     
-    e = g1*( x - x1 );
+
+
+    e1 = g1*( x - x1 );
     e2 = cx2*(x3 - x2) + cx21*(x1 - x2);
     e3 = cx3*(x1 - x3);
     e4 = cx4*(x2 - x4);
     
-    E( i+1, :) = e;
-    E2( i+1, :) = e2;
-    E3( i+1, :) = e3;
-    E4( i+1, :) = e4;
+    Car1.E( i+1, :) = e1;
+    Car2.E( i+1, :) = e2;
+    Car3.E( i+1, :) = e3;
+    Car4.E( i+1, :) = e4;
 %     
-    Y1( i+1, : ) = C1*e;
-    Y2( i+1, : ) = C2*e2;
-    Y3( i+1, : ) = C3*e3;
-    Y4( i+1, : ) = C4*e4;
+    Car1.Y( i+1, : ) = C*e1;
+    Car2.Y( i+1, : ) = C*e2;
+    Car3.Y( i+1, : ) = C*e3;
+    Car4.Y( i+1, : ) = C*e4;
 end
 % plot(X1(1:L),1:L)
 
@@ -447,7 +275,7 @@ end
 %..........................................................................
 
 theta = 0.9;
-
+AA = Car1.Au_hat;
 %..........................................................................
 % Inicial values for solution for dual-primal problem
 %..........................................................................
@@ -607,7 +435,7 @@ for i = L+1:length(t)
     Ee2(i,:) = out2;
     Ee4(i,:) = out4;
     
-    e = out;
+    e1 = out;
     e3 = out3;
     e2 = out2;
     e4 = out4;
@@ -647,7 +475,7 @@ for i = L+1:length(t)
         gamma4 = cx4*kron( eye(T), B2o )*(u2+dd2);
         
 %       Equation 11
-        F1 = e'*A_'*Q_hat*B_1 + gamma'*P_'*Q_hat*B_1 + dd1'*B_1'*Q_hat*B_1;
+        F1 = e1'*A_'*Q_hat*B_1 + gamma'*P_'*Q_hat*B_1 + dd1'*B_1'*Q_hat*B_1;
         F3 = e3'*A_'*Q_hat*B_3 + gamma3'*P_'*Q_hat*B_3 + dd3'*B_3'*Q_hat*B_3;
         F2 = e2'*A_'*Q_hat*B_2 + gamma2'*P_'*Q_hat*B_2 + dd2'*B_2'*Q_hat*B_2;
         F4 = e4'*A_'*Q_hat*B_4 + gamma4'*P_'*Q_hat*B_4 + dd4'*B_4'*Q_hat*B_4;
@@ -668,7 +496,6 @@ for i = L+1:length(t)
         u3 = ( H3 + theta*( AA'*AA ) )  \ ( AA'*( theta*s3 + Lambda3 ) - F3' );
         s3 = min( AA*u3 - ( 1/theta )*Lambda3 , bU );
         Lambda3 = Lambda3 + theta*(-AA*u3 + s3);
-        
         
         
         u4 = ( H4 + theta*( AA'*AA ) )  \ ( AA'*( theta*s4 + Lambda4 ) - F4' );
@@ -700,7 +527,6 @@ for i = L+1:length(t)
     % State agent 1
     X1( i+1 , : ) = x1;
     
-    
     % System agent 2
     di = md*randn(nu,1);
     D2( i, : ) = di;
@@ -716,10 +542,7 @@ for i = L+1:length(t)
     % State agent 3
     X3( i+1 , : ) = x3;
     
-    
-    
-    
-     % System agent 4
+    % System agent 4
     di = md*randn(nu,1);
     D4( i, : ) = di;
     x4 = A4*x4 + B4o*(u4(1,1) + di);
@@ -727,34 +550,21 @@ for i = L+1:length(t)
     % State agent 4
     X4( i+1 , : ) = x4;
     
-    
-    
-    
-    
-
-    e = g1*(x - x1);
-    Y1(i+1,:) = C1*e;
-    E(i+1, :) = e;
-    
-    
-    
+    e1 = g1*(x - x1);
+    Y1(i+1,:) = C1*e1;
+    E(i+1, :) = e1;
     
     e2 = cx2*(x3 - x2) + cx21*(x1 - x2);
     Y2( i+1 , : ) = C2*e2;
     E2(i+1, :) = e2;
     
-    
-    
-    
     e3 = cx3*(x1 - x3);
     E3(i+1, :) = e3;
     Y3(i+1, :) = C3*e3;
     
-    
     e4 = cx4*(x2 - x4);
     E4(i+1, :) = e4;
     Y4(i+1, :) = C4*e4;
-    
     
     % Control
     U( i , :) = u(1,1);
