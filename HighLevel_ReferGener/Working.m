@@ -6,8 +6,8 @@ close all
 clc
 
 % %---------laptop asus
-% addpath(genpath('C:\gurobi901\win64\matlab'))%GUROBI
-% addpath(genpath('C:\Users\nesto\OneDrive\Documentos\YALMIP-master'))%yalmip
+addpath(genpath('C:\gurobi950\win64\matlab'))%GUROBI
+addpath(genpath('C:\Users\nesto\OneDrive\Documentos\YALMIP-master'))%yalmip
 
 yalmip('clear')
 %% PROGRAM
@@ -296,6 +296,8 @@ hist_f12 = [];
 hist_g12 = [];
 hist_h12 = [];
 
+hist_pos = [pos];
+
 %% Optimization
 
 
@@ -405,6 +407,7 @@ for i = 1:30
     ahist = [ahist acel];
     dhist = [dhist; d1i];
     hist_dz = [hist_dz; dif_z];
+    hist_pos = [hist_pos pos];
     %     pause(0.05)
 
     mpciter;
@@ -420,4 +423,5 @@ vphist = cat(3, hist_vp1, hist_vp1);
 zphist = cat(3, hist_zp1, hist_zp2);
 
 Draw_object(vhist, zhist, vphist, zphist, dhist, T, 0)
-% save('myFile5.mat','vhist','zhist','vphist','zphist','dhist','T')
+save('myFile5.mat','vhist','zhist','vphist','zphist','dhist', 'hist_pos','T')
+save('C:\Users\nesto\OneDrive\Documentos\GitHub\Thesis\ADMM_-Distributed\Data\myData.mat','vhist','zhist','vphist','zphist','dhist', 'hist_pos','T')
