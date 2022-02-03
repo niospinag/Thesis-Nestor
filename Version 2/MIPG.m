@@ -11,8 +11,6 @@ addpath(genpath('C:\Users\nesto\OneDrive\Documentos\YALMIP-master'))%yalmip
 
 yalmip('clear')
 %% PROGRAM
-% Model data
-nv = 2; % numero de vehiculos sin el agente no cooperativo
 % MPC data
 Q = 1 * eye(1);
 R  = 10 * eye(1);
@@ -59,7 +57,6 @@ n12 = binvar(ones(1, N), ones(1, N));
 th12 = binvar(ones(1, N), ones(1, N));
 f12 = sdpvar(ones(1, N), ones(1, N));
 g12 = sdpvar(ones(1, N), ones(1, N));
-% h12 = sdpvar(ones(1, N), ones(1, N));
 
 a13 = binvar(ones(1, N), ones(1, N));
 b13 = binvar(ones(1, N), ones(1, N));
@@ -68,7 +65,6 @@ n13 = binvar(ones(1, N), ones(1, N));
 th13 = binvar(ones(1, N), ones(1, N));
 f13 = sdpvar(ones(1, N), ones(1, N));
 g13 = sdpvar(ones(1, N), ones(1, N));
-% h13 = sdpvar(ones(1, N), ones(1, N));
 
 %  LATERAL VARIABLES
 k12  = binvar(ones(1, N), ones(1, N));
@@ -103,13 +99,6 @@ xb_13 = sdpvar(ones(1, N), ones(1, N));
 xc_13 = sdpvar(ones(1, N), ones(1, N));
 xd_13 = sdpvar(ones(1, N), ones(1, N));
 
-
-% d12 = binvar(ones(1, N), ones(1, N));
-
-% rd12 = binvar(ones(1, N), ones(1, N));
-% ps12 = binvar(ones(1, N), ones(1, N));
-% p12 = intvar(ones(1, N), ones(1, N));
-% s12 = intvar(ones(1, N), ones(1, N));
 
 %% making the optimizer longitudinal
 constraints = [];
@@ -146,8 +135,6 @@ for k = 1:N
     %................................... (22)...............................
     constraints = log_imp(constraints, g12{k}, Ds, ab12{k});
     %................................... (23)...............................
-%     constraints = log_imp(constraints, h12{k}, dis12{k}, a12{k});
-    %................................... (24)...............................
     constraints = [constraints, g12{k} - f12{k} <= 0];
 
     % It is EXTREMELY important to add as many
@@ -182,7 +169,6 @@ for k = 1:N
     constraints = log_imp(constraints, xd_12{k}, z{k} ,   xr2_12{k});
     %................................... (32)...............................
     constraints = [constraints, xa_12{k} - xb_12{k} - xc_12{k} + xd_12{k} <= 0];
-%     constraints = [constraints, 0 <= xa_12{k} - xb_12{k} + xc_12{k} - xd_12{k} ];
     
 
 
@@ -203,8 +189,6 @@ for k = 1:N
     constraints = log_imp(constraints, f13{k}, dis13{k}, ab13{k});
     %................................... (22)...............................
     constraints = log_imp(constraints, g13{k}, Ds, ab13{k});
-    %................................... (23)...............................
-%     constraints = log_imp(constraints, h13{k}, dis13{k}, a13{k});
     %................................... (24)...............................
     constraints = [constraints, g13{k} - f13{k} <= 0];
 
@@ -264,15 +248,15 @@ hist_vp3 = [];
 hist_zp3 = [];
 
 %------condiciones iniciales----------
-vel = [20; 20; 20]; % velociodad inicial
-Vdes = [30; 80; 50]; %velocidad deseada
+vel = [20; 10; 20]; % velociodad inicial
+Vdes = [30; 80; 60]; %velocidad deseada
 
 zel = [1; 2; 3]; %carril inicial
-Zdes = [4; 4; 4]; %carril deseado
+Zdes = [5; 5; 5]; %carril deseado
 
 acel = [0 0 0]';
 %---distancia inicial de cada agente
-d1i = [-15; -30]';
+d1i = [-15; -30];
 
 % hold on
 vhist = vel;
@@ -291,12 +275,9 @@ hist_b12 = [];
 hist_ab12 = [];
 hist_f12 = [];
 hist_g12 = [];
-% hist_h12 = [];
 
 %% Optimization
 
-
-% i = 0;
 zel2 = zel; %same dimentions
 time = 20;
 tic
@@ -316,19 +297,17 @@ for i = 1:30
     A = solutions1{1};      acel(1) = A(:, 1);
     V = solutions1{2};      hist_vp1 = [hist_vp1; V];
     Z = solutions1{3};      zel2(1) = Z(:, 2);          hist_zp1 = [hist_zp1; Z];
-    dis = solutions1{4}; %dis(1) = d1i(1);
+    dis = solutions1{4}; 
     hist_a12 = [hist_a12; solutions1{5}];
     hist_b12 = [hist_b12; solutions1{6}];
     hist_ab12 = [hist_ab12; solutions1{7}];
     hist_f12 = [hist_f12; solutions1{8}];
     hist_g12 = [hist_g12; solutions1{9}];
-%     hist_h12 = [hist_h12; solutions1{10}];
 
 
     if diagnostics == 1
         error('control_front failed 1');
     end
-    hist_dis1 = [hist_dis1; dis];
 
 
     zel= zel2;
@@ -336,56 +315,49 @@ for i = 1:30
 
     %.........................      solver Frontal       ............................
 
-    inputs1 = {Vdes(2), vel(2), Zdes(2), zel(2),     vel(3), -d1i(1)+d1i(2),  zel(3), vel(1), -d1i(1),  zel(1)}; 
-    [solutions2, diagnostics] = control_front{inputs1};
+    inputs2 = {Vdes(2), vel(2), Zdes(2), zel(2),     vel(3), -d1i(1)+d1i(2),  zel(3), vel(1), -d1i(1),  zel(1)}; 
+    [solutions2, diagnostics] = control_front{inputs2};
 
     A = solutions2{1}; acel(2) = A(:, 1);
     V = solutions2{2}; hist_vp2 = [hist_vp2; V];
     Z = solutions2{3}; zel2(2) = Z(:, 2); hist_zp2 = [hist_zp2; Z];
-    dis = solutions2{4};  dis(1) = -d1i(1);
+    dis = solutions2{4};  
 
 
     if diagnostics == 1
         error('control_front failed 2');
     end
    
-    hist_dis2 = [hist_dis2; dis];
-
     zel= zel2;
     %     ######################  VEHICULO 3 #######################
 
     %.........................      solver Frontal       ............................
 
-    inputs1 = {Vdes(3), vel(3), Zdes(3), zel(3),     vel(1), -d1i(2),  zel(1), vel(2), -d1i(2)+d1i(1),  zel(2)}; 
-    [solutions3, diagnostics] = control_front{inputs1};
+    inputs3 = {Vdes(3), vel(3), Zdes(3), zel(3),     vel(1), -d1i(2),  zel(1), vel(2), -d1i(2)+d1i(1),  zel(2)}; 
+    [solutions3, diagnostics] = control_front{inputs3};
 
     A = solutions3{1}; acel(3) = A(:, 1);
     V = solutions3{2}; hist_vp3 = [hist_vp3; V];
     Z = solutions3{3}; zel2(3) = Z(:, 2); hist_zp3 = [hist_zp3; Z];
-    dis = solutions3{4};  dis(1) = -d1i(2);
+    dis = solutions3{4};  
 
 
     if diagnostics == 1
         error('control_front failed 3');
     end
    
-    hist_dis3 = [hist_dis3; dis];
-
 
     %----------------------------------------------------------------------
     zel= zel2;
-%     dif_z = [hist_zp2(end,:) - hist_zp1(end,:)];
 
     d1i = d1i + T * (vel(2:nv) - ones((nv - 1), 1) * vel(1));
-
 
     vel = vel + T * acel;
     vhist = [vhist vel];
     zhist = [zhist zel];
     ahist = [ahist acel];
-    dhist = [dhist; d1i];
-%     hist_dz = [hist_dz; dif_z];
-    %     pause(0.05)
+    dhist = [dhist d1i];
+
 
     mpciter;
     mpciter = mpciter + 1;
