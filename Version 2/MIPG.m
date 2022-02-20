@@ -14,12 +14,12 @@ yalmip('clear')
 % MPC data
 Q = 1 * eye(1);
 R  = 10 * eye(1);
-N = 5; % horizon 5
+N = 7; % horizon 5
 T = 0.3; % [s]
 Ds = 15; % Safety distance [m]
 Dl = 20; % lateral distance
 V_max = 80;
-A_max = 30;
+A_max = 50;
 L = 6; % number of lanes
 Mmax = L - 1;
 mmin = -L + 1;
@@ -330,34 +330,35 @@ hist_zp5 = [];
 
 hist_vp6 = [];
 hist_zp6 = [];
-% %------condiciones iniciales----------
-% vel =  [25; 20; 20; 20; 30; 10]; % velociodad inicial
-% Vdes = [30; 50; 40; 60; 20; 35]; %velocidad deseada
-% 
-% zel =  [3; 4; 2; 6; 1; 3]; %carril inicial
-% Zdes = [1; 1; 1; 1; 1; 1]; %carril deseado
-% 
-% acel = zeros(6,1);
-% %---distancia inicial de cada agente
-% d1i = [-10 -20 -40 -45 -60]';
-% pos = [0 -10 -20 -40 -45 -60]';
 %------condiciones iniciales----------
-vel = [20; 10; 20; 10; 40; 30]; % velociodad inicial
-Vdes = [30; 80; 60; 30; 50; 20]; %velocidad deseada
+vel =  [25; 20; 20; 20; 30; 10]; % velociodad inicial
+Vdes = [30; 50; 30; 40; 20; 25]; %velocidad deseada
 
-zel = [1; 2; 3; 4; 5; 2]; %carril inicial
-Zdes = [5; 5; 5; 2; 1; 4]; %carril deseado
+zel =  [3; 4; 2; 6; 1; 3]; %carril inicial
+Zdes = [1; 1; 1; 1; 1; 1]; %carril deseado
 
-acel = [0 0 0 0 0 0]';
+acel = zeros(6,1);
 %---distancia inicial de cada agente
-pos = [0; -15; -30; 10; 20; -40];
+d1i = [-10 -20 -40 -45 -60]';
+pos = [0 -10 -20 -40 -45 -60]';
+% %------condiciones iniciales----------
+% vel = [20; 10; 20; 10; 40; 30]; % velociodad inicial
+% Vdes = [30; 80; 60; 30; 50; 20]; %velocidad deseada
+% 
+% zel = [1; 2; 3; 4; 5; 2]; %carril inicial
+% Zdes = [5; 5; 5; 2; 1; 4]; %carril deseado
+% 
+% acel = [0 0 0 0 0 0]';
+% %---distancia inicial de cada agente
+% pos = [0; -15; -30; 10; 20; -40];
 
 % hold on
 vhist = vel;
 zhist = zel;
 ahist = acel;
-dhist = d1i;
+% dhist = d1i;
 mpciter = 0;
+hist_pos = pos;
 
 hist_dz = [];
 hist_dis1 = [];
@@ -511,14 +512,15 @@ for i = 1:30
     %----------------------------------------------------------------------
     zel= zel2;
 
-    d1i = d1i + T * (vel(2:nv) - ones((nv - 1), 1) * vel(1));
+%     d1i = d1i + T * (vel(2:nv) - ones((nv - 1), 1) * vel(1));
     pos = pos + T*vel;
-
+    
+    hist_pos = [hist_pos pos];
     vel = vel + T * acel;
     vhist = [vhist vel];
     zhist = [zhist zel];
     ahist = [ahist acel];
-    dhist = [dhist d1i];
+%     dhist = [dhist d1i];
 
 
     mpciter;
@@ -530,8 +532,10 @@ disp("it's done")
 
 %% plot
 
+% dhist = [-hist_pos(1,:)+hist_pos(2,:); -hist_pos(1,:)+hist_pos(3,:); ...
+%     -hist_pos(1,:)+hist_pos(4,:); -hist_pos(1,:)+hist_pos(5,:); -hist_pos(1,:)+hist_pos(6,:)];
 vphist = cat(3, hist_vp1, hist_vp2, hist_vp3, hist_vp4, hist_vp5, hist_vp6);
 zphist = cat(3, hist_zp1, hist_zp2, hist_zp3, hist_zp4, hist_zp5, hist_zp6 );
 
-Draw_object(vhist, zhist, vphist, zphist, dhist, T, 0.1)
-% save('myFile5.mat','vhist','zhist','vphist','zphist','dhist','T')
+Draw_object(vhist, zhist, vphist, zphist, hist_pos, T, 0)
+save('myData.mat','vhist','zhist','vphist','zphist','hist_pos','T')
