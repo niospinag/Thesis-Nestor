@@ -3,6 +3,10 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+# no trackear
+Version 2/MPC.gif
+Version 2/myData.mat
+
 # C extensions
 *.so
 
