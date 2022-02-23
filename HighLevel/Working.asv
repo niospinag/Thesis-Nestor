@@ -402,21 +402,20 @@ Draw_object(vhist, zhist, vphist, zphist, dhist, T, 0)
 %% plot thesis
 
 
-tiledlayout(1,2)
+title('Lane change')
+xlabel('time [s]')
+ylabel('Lane')
+grid
+legend('z_i(t)','z_j(t)')
 
 % Top plot
 ax1 = nexttile;
 plot(ax1,x,zhist(1,:),'-o',x,zhist(2,:),'-o')
-title(ax1,'Lane Change')
-xlabel(ax1,'time [s]')
-ylabel(ax1,'Lane')
-grid(ax1,"on")
+title(ax1,'Lane change')
+ylabel(ax1,'sin(5x)')
 
 % Bottom plot
 ax2 = nexttile;
-plot(ax2,x,dhist)
-title(ax2,'Distance Plot')
-xlabel(ax2,'time [s]')
-ylabel(ax2,'d_{i,j} [m]')
-
-grid
+plot(ax2,x,y2)
+title(ax2,'Bottom Plot')
+ylabel(ax2,'sin(15x)')
