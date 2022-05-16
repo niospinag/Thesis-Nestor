@@ -336,6 +336,8 @@ Vdes = [30; 50; 30; 40; 20; 25]; %velocidad deseada
 
 zel =  [3; 4; 2; 6; 1; 3]; %carril inicial
 Zdes = [1; 1; 1; 1; 1; 1]; %carril deseado
+% zel =  [3; 4; 2; 6; 1; 3]; %carril inicial
+% Zdes = [1; 1; 5; 1; 1; 5]; %carril deseado
 
 acel = zeros(6,1);
 %---distancia inicial de cada agente

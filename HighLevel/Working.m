@@ -6,8 +6,8 @@ close all
 clc
 
 % %---------laptop asus
-% addpath(genpath('C:\gurobi901\win64\matlab'))%GUROBI
-% addpath(genpath('C:\Users\nesto\OneDrive\Documentos\YALMIP-master'))%yalmip
+addpath(genpath('C:\gurobi901\win64\matlab'))%GUROBI
+addpath(genpath('C:\Users\nesto\OneDrive\Documentos\YALMIP-master'))%yalmip
 
 yalmip('clear')
 %% PROGRAM
