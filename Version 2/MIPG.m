@@ -6,8 +6,12 @@ close all
 clc
 
 % %---------laptop asus
-addpath(genpath('C:\gurobi950\win64\matlab'))%GUROBI 
-addpath(genpath('C:\Users\nesto\OneDrive\Documentos\YALMIP-master'))%yalmip
+% addpath(genpath('C:\gurobi950\win64\matlab'))%GUROBI 
+% addpath(genpath('C:\Users\nesto\OneDrive\Documentos\YALMIP-master'))%yalmip
+
+addpath(genpath('/opt/gurobi951/linux64/matlab'))%GUROBI 
+addpath(genpath('~/YALMIP-master'))%yalmip
+
 
 yalmip('clear')
 %% PROGRAM
@@ -331,18 +335,19 @@ hist_zp5 = [];
 hist_vp6 = [];
 hist_zp6 = [];
 %------condiciones iniciales----------
-vel =  [25; 20; 20; 20; 30; 10]; % velociodad inicial
-Vdes = [30; 50; 30; 40; 20; 25]; %velocidad deseada
+vel =  [30; 20; 10; 20; 30; 10]; % velociodad inicial
+Vdes = [10; 40; 50; 60; 20; 30]; %velocidad deseada
 
-zel =  [3; 4; 2; 6; 1; 3]; %carril inicial
-Zdes = [1; 1; 1; 1; 1; 1]; %carril deseado
+zel =  [2; 3; 4; 6; 1; 3]; %carril inicial
+Zdes = [3; 2; 2; 1; 5; 1]; %carril deseado
 % zel =  [3; 4; 2; 6; 1; 3]; %carril inicial
-% Zdes = [1; 1; 5; 1; 1; 5]; %carril deseado
+% Zdes = [1; 1; 1; 1; 1; 1]; %carril deseado
 
 acel = zeros(6,1);
 %---distancia inicial de cada agente
-d1i = [-10 -20 -40 -45 -60]';
-pos = [0 -10 -20 -40 -45 -60]';
+d1i = [-40 -10 -30 -45 -60]';
+% pos = [0 -10 -20 -40 -45 -60]';
+pos = [0; d1i];
 % %------condiciones iniciales----------
 % vel = [20; 10; 20; 10; 40; 30]; % velociodad inicial
 % Vdes = [30; 80; 60; 30; 50; 20]; %velocidad deseada
@@ -381,7 +386,7 @@ tic
 sim_tim = 20;
 nv= length(vel);
 dif_z = ones(1,N+1)*[zel(2)-zel(1)];
-for i = 1:30
+for i = 1:40
     %     ######################  VEHICULO 1 #######################
     
     NH = closest(pos, zel, 1);
@@ -539,5 +544,11 @@ disp("it's done")
 vphist = cat(3, hist_vp1, hist_vp2, hist_vp3, hist_vp4, hist_vp5, hist_vp6);
 zphist = cat(3, hist_zp1, hist_zp2, hist_zp3, hist_zp4, hist_zp5, hist_zp6 );
 
-Draw_object(vhist, zhist, vphist, zphist, hist_pos, T, 0)
-save('myData.mat','vhist','zhist','vphist','zphist','hist_pos','T')
+shift_x = -20 
+shift_y = -70
+scale_x = 0.5
+scale_y = 25
+
+
+Draw_object(vhist*scale_x , zhist*scale_y + shift_y, vphist*scale_x, zphist*scale_y + shift_y, hist_pos*scale_x + shift_x, T, 1)
+save('myData3.mat','vhist','zhist','vphist','zphist','hist_pos','T')

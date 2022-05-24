@@ -14,7 +14,7 @@ fontsize_labels = 14;
 %--------------------------------------------------------------------------
 %-----------------------Simulate robots -----------------------------------
 %--------------------------------------------------------------------------
-an = 10; alt=0.5; % parametros carroceria
+an = 5; alt=7; % parametros carroceria
 
 rob_diam=1.5;
 r = rob_diam/2;  % robot radius
@@ -61,10 +61,10 @@ y=zhist;
 %  dibujo dinamico
 for k = 1:size(vhist,2)
 
-%     for n=1:V
-%         x(1,k+1,n)=x(1,k,n)+T*vhist(n,k);
-%     end
-    
+    %     for n=1:V
+    %         x(1,k+1,n)=x(1,k,n)+T*vhist(n,k);
+    %     end
+
     %-------------Plot any car----------------
 
     plot_car(an,alt,x(1,k),y(1,k),0,'b')%Plot the car
@@ -129,7 +129,8 @@ for k = 1:size(vhist,2)
     %figure(500)
     ylabel('$y$-position (m)','interpreter','latex','FontSize',fontsize_labels)
     xlabel('$x$-position (m)','interpreter','latex','FontSize',fontsize_labels)
-    axis([-150 300 -0.2 7])%descripcion de los ejes
+%     axis([-150 300 -0.2 7])%descripcion de los ejes [-x x -y y]
+    axis([-200 200 -150 150])%descripcion de los ejes
     %   axis([x_min x_max y_min y_max])
 
     pause(delay_time)
@@ -141,18 +142,18 @@ for k = 1:size(vhist,2)
     F(k) = getframe(gcf); % to get the current frame
 
 
-    %---------------------make gift--------------------------
-    frame = getframe(figure(500));
-    im = frame2im(frame);
-    [imind,cm] = rgb2ind(im,256);
-    % Write to the GIF File
-    if k == 1
-        imwrite(imind,cm,filename,'gif', 'Loopcount',inf);
-  else
-      imwrite(imind,cm,filename,'gif','WriteMode','append');
-  end
-
-  %
+%     %---------------------make gift--------------------------
+%     frame = getframe(figure(500));
+%     im = frame2im(frame);
+%     [imind,cm] = rgb2ind(im,256);
+%     % Write to the GIF File
+%     if k == 1
+%         imwrite(imind,cm,filename,'gif', 'Loopcount',inf);
+%     else
+%         imwrite(imind,cm,filename,'gif','WriteMode','append');
+%     end
+%     %---------------------------------------------------------
+    %
 
 end
 close(gcf)
