@@ -1,4 +1,4 @@
-function Draw_object(vhist,zhist,vphist,zphist,dhist,T,delay_time)
+function Draw_object(vhist,zhist,vphist,zphist,dhist,T, name_gif, delay_time)
 
 
 N = size(vphist,2)-1;%Horizonte de prediccion
@@ -168,7 +168,7 @@ for k = 1:size(vhist,2)
     
 
 
-    filename = 'MPC.gif';% <---------------------------------------------------------------------------------------------------------------
+    filename = strcat(name_gif,'.gif');% <---------------------------------------------------------------------------------------------------------------
 
 
     hold off
